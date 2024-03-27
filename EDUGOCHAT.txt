@@ -1,0 +1,2024 @@
+<aura:component controller="Teacher_ParentChat_Cntrl" implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:appHostable,force:lightningQuickAction" access="global"> 
+    <!-- recent Chat feature logic starts here-->
+    <!-- recent Chat feature ends here -->
+    <aura:attribute name="setdate" type="list" />
+    <aura:attribute name="newMsgCount" type="Map" default="{}"/>
+    <aura:attribute name="mapOfObj" type="Map" default="{}"/>
+    <aura:attribute name="mapEmailToParents" type="Map" default="{}"/>
+    <aura:attribute name="newMsgId" type="Map" default="{}"/>
+    <aura:attribute name="timeInterval" type="Integer" />
+     <aura:attribute name="timer" type="Integer" />
+    <aura:attribute name="parentEmail" type="String" />
+    <aura:attribute name="message" type="String" default='' />
+    <aura:attribute name="userObj" type="User" default='' />
+    <aura:attribute name="setEmail" type="String" default='' />
+    <aura:attribute name="p_DeviceId" type="String" default='' />
+    <aura:attribute name="p_Name" type="String" default = '' />
+    <aura:attribute name="p_Image" type="String" default = '' />
+    <aura:attribute name="preview_url" type="String" default = '' />
+    <aura:attribute name="message1" type="String" default = '' />
+    <aura:attribute name="Parentinfo" type="list" />
+    <aura:attribute name="ParentinfoBackup" type="list" />
+    <aura:attribute name="searchParentHashMap" type="map" />
+    <aura:attribute name="parentNamesList" type="list" />
+    <aura:attribute name="ParentinfoRefresh" type="list" />
+    <aura:attribute name="truthy" type="boolean" default="false" />
+    <aura:attribute name="isEnable" type="boolean" default="false" />
+    <aura:attribute name="showloader" type="boolean" default="false" />
+    <aura:attribute name="isLoading" type="boolean" default="false" />
+    <aura:attribute name="isStartChat" type="boolean" default="true" />
+    <aura:attribute name="isMessages" type="boolean" default="false" />
+    <aura:attribute name="chatmes" type="list" />
+    <aura:attribute name="index" type="Integer" />
+    <aura:attribute name ="isSearchFound" type="boolean" default="false" /> 
+    <aura:attribute name ="issearchLoading" type="boolean" default="false" /> 
+    <aura:attribute name ="isDefaultLoad" type="boolean" default="true" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:html tag="style">
+        #snackbar {
+        visibility: hidden;
+        min-width: 250px;
+        margin-left: -125px;
+        margin-top:5%;      
+        background-color:red;
+        color: #fff;
+        text-align: center;
+        border-radius: 2px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        
+        font-size: 17px;
+        }
+        
+        #snackbar.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        
+        
+        .slds-input{border: none;outline: none;box-shadow: none;}
+        .iconcsss{
+        
+        }
+        .tableFixHead {
+        overflow-y: auto;
+        height: 65vh;
+        }
+        .tableFixHead thead th {
+        position: sticky;
+        top: -2px;
+        z-index: 1;
+        
+        }
+        table {
+        border-collapse: collapse;
+        width: 100%;
+        }
+        th,
+        td {
+        padding: 8px 16px;
+        }
+        th {
+        background: #eee;
+        }
+        .slds-form-element__label{display:none;}
+        option{
+        padding: 5px;
+        background-color:  rgb(243 243 243);
+        font-size: 16px;
+        }
+        .tslds-col slds-size_5-of-6{
+        border-radius: 10px;
+        width: 80%;
+        }
+        
+        .chatImg{
+        width: 45px;
+        border-radius: 65%;
+        height: 45px;
+        }
+        .chatPrnt{
+        align-items: center;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: 10px;
+        margin-bottom: 5px;
+        }
+        .avtar{
+        text-transform: uppercase;
+        height: 45px;
+        width: 45px;
+        font-size: 1.8em;
+        color: white;
+        
+        }
+        
+        .chatTxt{
+        margin-left: 10px;
+        font-size: 16px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        min-width: 45%;
+        }
+        .input{
+        border: 1.5px solid #e5e5e5;
+        border-radius: 10px;
+        width: 100%;
+        padding: 2px 10px;
+        <!--    margin: .5rem 0 1rem; -->
+        }
+        .count{
+        color:rgb(174 174 174) !important;;
+        text-align: end;
+        width: 30%;
+        }
+        .highlight{
+        background: rgb(174 174 174) !important;
+        }
+        .one{
+        width: 100%;
+        padding: 15px 5.5rem 15px 15px;
+        font-size: 18px;
+        border-radius: 50px;
+        border: 1px solid grey;
+        outline: none !important;
+        background:#d3d3d345;
+        }
+        .btnss{
+        position: absolute;
+        display: flex;
+        margin-top: 2rem;
+        right: 1rem;
+        width: 4rem;
+        justify-content: space-between;
+        }
+        .chtRoom{
+        width: 14rem;
+        border: 1px solid;
+        border-radius: 3px;
+        padding: 5px;
+        font-family: Arial;
+        display: flex;
+        color: #070707;
+        font-size: 20px;
+        font-weight: bold;
+        }
+        .chtTime{
+        font-size:10px;
+        }
+        
+    </aura:html>
+    <div class="slds-card"  >
+        <aura:if isTrue="{!v.isStartChat}">
+            <div class="slds-grid slds-wrap" > 
+                <aura:if isTrue="{!v.isLoading}">
+                    <div class="slds-col slds-medium-size_3-of-12 slds-large-size_3-of-12" style="height: 24rem;overflow-y: auto;border-right: 1px solid #e5e5e5;">
+                        <!--<lightning:input  type="search" class="input" value=" " aura:id="enter-search" placeholder="Search Parent.." onchange="{!c.searchParent}"/> -->
+                        <!--    <div onchange="{!c.searchParent }" class="input"> -->
+                        <lightning:input  onchange="{!c.findParentsStartsWith}" class="input" aura:id="enter-search" name="enter-search" placeholder="Search Parent.." type="search" />
+                        <!--     </div>  -->
+                        
+                        <aura:if isTrue="{!v.isDefaultLoad}">
+                            <aura:iteration items="{!v.Parentinfo}" var="item">
+                                <aura:if isTrue="{!and(item.Email != '' , item.Name != '')}"> 
+                                    <div onmouseover="{!c.mouseover}" onclick="{!c.selected_Parent}" onmouseout="{!c.mouseout}" class="slds-grid chatPrnt" data-label="{!item.Email +'_Devide_'+ item.DeviceId+'_Devide_'+item.Name+'_Devide_'+item.Image}" >
+                                        <aura:if isTrue="{!item.Image != ''}">
+                                            <img class="chatImg" data-label="{!item.Email +'_Devide_'+ item.DeviceId+'_Devide_'+item.Name+'_Devide_'+item.Image}" src="{!item.Image}"  />
+                                            <aura:set attribute="else">
+                                                <span class="slds-avatar slds-avatar_circle avtar">
+                                                    <abbr class="slds-avatar__initials slds-icon-standard-user" style="background: #13294B!;">{!item.Name[0]}</abbr>
+                                                </span>    
+                                            </aura:set>
+                                        </aura:if>
+                                        <div class="chatTxt" data-label="{!item.Email +'_Devide_'+ item.DeviceId+'_Devide_'+item.Name+'_Devide_'+item.Image}" > {!item.Name} </div>
+                                         <span class="chtTime">{!item.LastChatTime}</span>
+                                        <div class="count" >
+                                            <aura:if isTrue="{!item.count > 0}">
+                                                <b style="font-size: 14px;width: 30px; height: 30px;text-align: center; line-height: 30px;  border-radius: 50%; background-color: #d34b4b; display: inline-block; color: #fff;">{!item.count}</b>
+                                                <!-- <span>{!item.LastChatTime[38] == 'M' ? item.LastChatTime[28]+item.LastChatTime[29]+':'+item.LastChatTime[31]+''+item.LastChatTime[32] +' '+item.LastChatTime[37] +''+item.LastChatTime[38] : ''}</span>
+                                                <span>{!item.LastChatTime[36] == 'M' ? item.LastChatTime[26]+item.LastChatTime[27]+':'+item.LastChatTime[29]+''+item.LastChatTime[30] +' '+item.LastChatTime[35] +''+item.LastChatTime[36] : ''}</span>
+                                                <span>{!item.LastChatTime[35] == 'M' ? item.LastChatTime[25]+item.LastChatTime[26]+':'+item.LastChatTime[28]+''+item.LastChatTime[29] +' '+item.LastChatTime[34] +''+item.LastChatTime[35] : ''}</span>
+                                                <span>{!item.LastChatTime[34] == 'M' ? item.LastChatTime[24]+item.LastChatTime[25]+':'+item.LastChatTime[27]+''+item.LastChatTime[28] +' '+item.LastChatTime[33] +''+item.LastChatTime[34] : ''}</span>
+                                                <span>{!item.LastChatTime[33] == 'M' ? item.LastChatTime[23]+item.LastChatTime[24]+':'+item.LastChatTime[26]+''+item.LastChatTime[27] +' '+item.LastChatTime[32] +''+item.LastChatTime[33] : ''}</span>
+                                                <span>{!item.LastChatTime[32] == 'M' ? item.LastChatTime[22]+item.LastChatTime[23]+':'+item.LastChatTime[25]+''+item.LastChatTime[26] +' '+item.LastChatTime[31] +''+item.LastChatTime[32] : ''}</span>
+                                                <span>{!item.LastChatTime[31] == 'M' ? item.LastChatTime[21]+item.LastChatTime[22]+':'+item.LastChatTime[24]+''+item.LastChatTime[25] +' '+item.LastChatTime[30] +''+item.LastChatTime[31] : ''}</span>
+                                                <span>{!item.LastChatTime[30] == 'M' ? item.LastChatTime[20]+item.LastChatTime[21]+':'+item.LastChatTime[23]+''+item.LastChatTime[24] +' '+item.LastChatTime[29] +''+item.LastChatTime[30] : ''}</span> -->
+                                               <!-- <aura:set attribute="else">
+                                                   <span>{!item.LastChatTime[38] == 'M' ? item.LastChatTime[28]+item.LastChatTime[29]+':'+item.LastChatTime[31]+''+item.LastChatTime[32] +' '+item.LastChatTime[37] +''+item.LastChatTime[38] : ''}</span>
+                                                    <span>{!item.LastChatTime[36] == 'M' ? item.LastChatTime[26]+item.LastChatTime[27]+':'+item.LastChatTime[29]+''+item.LastChatTime[30] +' '+item.LastChatTime[35] +''+item.LastChatTime[36] : ''}</span>
+                                                    <span>{!item.LastChatTime[35] == 'M' ? item.LastChatTime[25]+item.LastChatTime[26]+':'+item.LastChatTime[28]+''+item.LastChatTime[29] +' '+item.LastChatTime[34] +''+item.LastChatTime[35] : ''}</span>
+                                                    <span>{!item.LastChatTime[34] == 'M' ? item.LastChatTime[24]+item.LastChatTime[25]+':'+item.LastChatTime[27]+''+item.LastChatTime[28] +' '+item.LastChatTime[33] +''+item.LastChatTime[34] : ''}</span>
+                                                    <span>{!item.LastChatTime[33] == 'M' ? item.LastChatTime[23]+item.LastChatTime[24]+':'+item.LastChatTime[26]+''+item.LastChatTime[27] +' '+item.LastChatTime[32] +''+item.LastChatTime[33] : ''}</span>
+                                                    <span>{!item.LastChatTime[32] == 'M' ? item.LastChatTime[22]+item.LastChatTime[23]+':'+item.LastChatTime[25]+''+item.LastChatTime[26] +' '+item.LastChatTime[31] +''+item.LastChatTime[32] : ''}</span>
+                                                    <span>{!item.LastChatTime[31] == 'M' ? item.LastChatTime[21]+item.LastChatTime[22]+':'+item.LastChatTime[24]+''+item.LastChatTime[25] +' '+item.LastChatTime[30] +''+item.LastChatTime[31] : ''}</span>
+                                                    <span>{!item.LastChatTime[30] == 'M' ? item.LastChatTime[20]+item.LastChatTime[21]+':'+item.LastChatTime[23]+''+item.LastChatTime[24] +' '+item.LastChatTime[29] +''+item.LastChatTime[30] : ''}</span>
+                                                </aura:set> -->
+                                            </aura:if>
+                                            
+                                            
+                                        </div>
+                                    </div> 
+                                </aura:if>
+                               </aura:iteration> 
+                        </aura:if>
+                        <aura:if isTrue ="{!v.isSearchFound}">
+                                    <aura:iteration items="{!v.ParentinfoBackup}" var="item">
+                                        <aura:if isTrue="{!and(item.Email != '' , item.Name != '')}"> 
+                                            <div onmouseover="{!c.mouseover}" onclick="{!c.selected_Parent}" onmouseout="{!c.mouseout}" class="slds-grid chatPrnt" data-label="{!item.Email +'_Devide_'+ item.DeviceId+'_Devide_'+item.Name+'_Devide_'+item.Image}" >
+                                                <aura:if isTrue="{!item.Image != ''}">
+                                                    <img class="chatImg" data-label="{!item.Email +'_Devide_'+ item.DeviceId+'_Devide_'+item.Name+'_Devide_'+item.Image}" src="{!item.Image}"  />
+                                                    <aura:set attribute="else">
+                                                        <span class="slds-avatar slds-avatar_circle avtar">
+                                                            <abbr class="slds-avatar__initials slds-icon-standard-user" style="background: #13294B!;">{!item.Name[0]}</abbr>
+                                                        </span>    
+                                                    </aura:set>
+                                                </aura:if>
+                                                <div class="chatTxt" data-label="{!item.Email +'_Devide_'+ item.DeviceId+'_Devide_'+item.Name+'_Devide_'+item.Image}" > {!item.Name} </div>
+                                                <div class="count" >
+                                                    <aura:if isTrue="{!item.count > 0}">
+                                                        <b style="font-size: 14px;width: 30px; height: 30px;text-align: center; line-height: 30px;  border-radius: 50%; background-color: #d34b4b; display: inline-block; color: #fff;">{!item.count}</b>
+                                                        <span>{!item.LastChatTime[36] == 'M' ? item.LastChatTime[26]+item.LastChatTime[27]+':'+item.LastChatTime[29]+''+item.LastChatTime[30] +' '+item.LastChatTime[35] +''+item.LastChatTime[36] : ''}</span>
+                                                        <span>{!item.LastChatTime[35] == 'M' ? item.LastChatTime[25]+item.LastChatTime[26]+':'+item.LastChatTime[28]+''+item.LastChatTime[29] +' '+item.LastChatTime[34] +''+item.LastChatTime[35] : ''}</span>
+                                                        <span>{!item.LastChatTime[34] == 'M' ? item.LastChatTime[24]+item.LastChatTime[25]+':'+item.LastChatTime[27]+''+item.LastChatTime[28] +' '+item.LastChatTime[33] +''+item.LastChatTime[34] : ''}</span>
+                                                        <span>{!item.LastChatTime[33] == 'M' ? item.LastChatTime[23]+item.LastChatTime[24]+':'+item.LastChatTime[26]+''+item.LastChatTime[27] +' '+item.LastChatTime[32] +''+item.LastChatTime[33] : ''}</span>
+                                                        <span>{!item.LastChatTime[32] == 'M' ? item.LastChatTime[22]+item.LastChatTime[23]+':'+item.LastChatTime[25]+''+item.LastChatTime[26] +' '+item.LastChatTime[31] +''+item.LastChatTime[32] : ''}</span>
+                                                        <span>{!item.LastChatTime[31] == 'M' ? item.LastChatTime[21]+item.LastChatTime[22]+':'+item.LastChatTime[24]+''+item.LastChatTime[25] +' '+item.LastChatTime[30] +''+item.LastChatTime[31] : ''}</span>
+                                                        <span>{!item.LastChatTime[30] == 'M' ? item.LastChatTime[20]+item.LastChatTime[21]+':'+item.LastChatTime[23]+''+item.LastChatTime[24] +' '+item.LastChatTime[29] +''+item.LastChatTime[30] : ''}</span>
+                                                        <aura:set attribute="else">
+                                                            <span>{!item.LastChatTime[36] == 'M' ? item.LastChatTime[26]+item.LastChatTime[27]+':'+item.LastChatTime[29]+''+item.LastChatTime[30] +' '+item.LastChatTime[35] +''+item.LastChatTime[36] : ''}</span>
+                                                            <span>{!item.LastChatTime[35] == 'M' ? item.LastChatTime[25]+item.LastChatTime[26]+':'+item.LastChatTime[28]+''+item.LastChatTime[29] +' '+item.LastChatTime[34] +''+item.LastChatTime[35] : ''}</span>
+                                                            <span>{!item.LastChatTime[34] == 'M' ? item.LastChatTime[24]+item.LastChatTime[25]+':'+item.LastChatTime[27]+''+item.LastChatTime[28] +' '+item.LastChatTime[33] +''+item.LastChatTime[34] : ''}</span>
+                                                            <span>{!item.LastChatTime[33] == 'M' ? item.LastChatTime[23]+item.LastChatTime[24]+':'+item.LastChatTime[26]+''+item.LastChatTime[27] +' '+item.LastChatTime[32] +''+item.LastChatTime[33] : ''}</span>
+                                                            <span>{!item.LastChatTime[32] == 'M' ? item.LastChatTime[22]+item.LastChatTime[23]+':'+item.LastChatTime[25]+''+item.LastChatTime[26] +' '+item.LastChatTime[31] +''+item.LastChatTime[32] : ''}</span>
+                                                            <span>{!item.LastChatTime[31] == 'M' ? item.LastChatTime[21]+item.LastChatTime[22]+':'+item.LastChatTime[24]+''+item.LastChatTime[25] +' '+item.LastChatTime[30] +''+item.LastChatTime[31] : ''}</span>
+                                                            <span>{!item.LastChatTime[30] == 'M' ? item.LastChatTime[20]+item.LastChatTime[21]+':'+item.LastChatTime[23]+''+item.LastChatTime[24] +' '+item.LastChatTime[29] +''+item.LastChatTime[30] : ''}</span>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                    
+                                                    
+                                                </div>
+                                            </div> 
+                                        </aura:if>
+                                    </aura:iteration>
+                                    
+                                </aura:if>
+                        <aura:if isTrue ="{!v.issearchLoading}">
+                            <div class="exampleHolder" style="text-align:center; margin-top: 20rem">
+                                <lightning:spinner alternativeText="Loading" size="large" variant  = "brand"/>
+                            </div>
+                        </aura:if>
+                    </div>
+                    <div class="slds-col slds-medium-size_9-of-12 slds-large-size_9-of-12" >   
+                        <div id="snackbar">Please Select File or Type a Message...</div>  
+                        <aura:if isTrue="{!v.truthy}">
+                            <!-- <div class="slds-grid slds-wrap" style="padding: 1%;margin: 1% 0;border-radius: 4px;background-color: #e5e5e5; align-items: center;">
+                    <div class="slds-col slds-size_3-of-6">
+                        <h1 style="font-size: 16px;"><span class="slds-page-header__title slds-truncate">Chat message</span></h1>
+                    </div>
+                    <div class="slds-col slds-size_3-of-6" style="text-align: right;">
+                        <lightning:buttonIcon iconName="utility:refresh" variant="brand" alternativeText="refresh" title="refresh" onclick="{!c.Refresh_chat}" />
+                    </div>
+                </div> -->
+                            
+                            <div class="tableFixHead chtScroll" aura:id = "scrollId" style="height: 294px;">
+                                
+                                <table class="slds-table slds-table_cell-buffer scroller-content" >
+                                    <thead>
+                                        <tr class="slds-line-height_reset">
+                                            <th class="" scope="col" style="background-color: #e5e5e5;">
+                                                <div class="slds-truncate" title="Parent" style="text-align: center;font-size: 16px;">Parent ({!v.p_Name})</div>
+                                            </th>
+                                            <th class="" scope="col" style="background-color: #e5e5e5;" >
+                                                <div class="slds-truncate" title="Teacher" style="text-align: center;font-size: 16px;">Teacher ({!v.userObj.Name})</div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <aura:iteration items="{!v.chatmes}" var="items" start="0" indexVar="index">
+                                            <tr class="slds-hint-parent">
+                                                <td class="slds-cell-wrap" style="width: 51%;">
+                                                    <aura:if isTrue="{!and(items.parent_message != undefined , items.parent_message != '')}"> 
+                                                        <div class="slds-truncate parent"> 
+                                                            {!items.parent_message} 
+                                                            <br/><span style="font-size:10px;float:right;"><i>{!items.created_date}</i></span></div>
+                                                        <aura:set attribute="else">   
+                                                            <aura:if isTrue="{and((!v.setEmail == items.parent_id),(!v.isMessages == false))}">
+                                                                <div class="exampleHolder">
+                                                                    <lightning:spinner alternativeText="Loading" size="large" variant  = "brand"/>
+                                                                </div>
+                                                            </aura:if>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!items.parent_message ==''}"> 
+                                                        <a href="{!items.download_url}" target="_blank">
+                                                            <img src="{!items.download_url}" style="max-width: 51%" id="index"/> <span style="font-size:10px; float:right"><i>{!items.created_date}</i></span>
+                                                        </a>
+                                                    </aura:if>
+                                                    
+                                                </td>
+                                                <td class="slds-cell-wrap" style="width: 51%;">
+                                                    <aura:if isTrue="{!and(items.teacher_message != undefined, items.teacher_message != '')}"> 
+                                                        <div class="slds-truncate teacher" style="word-wrap: break-word"> {!items.teacher_message} <br/><span style="font-size:10px; float:right"><i>{!items.created_date}</i></span></div>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!items.teacher_message == ''}"> 
+                                                        <a href="{!items.download_url}" target="_blank"> 
+                                                            <img src="{!items.download_url}" style="max-width: 51%"/> <br/><span style="font-size:10px; float:right"><i>{!items.created_date}</i></span>
+                                                        </a>
+                                                        
+                                                    </aura:if>
+                                                </td>
+                                            </tr>
+                                        </aura:iteration>
+                                    </tbody>
+                                </table>
+                                <aura:if isTrue="{!v.showloader}">
+                                    <div class="slds-grid slds-wrap">
+                                        <div class="slds-col slds-size_3-of-6"></div>
+                                        <div class="slds-col slds-size_3-of-6" style=" text-align: center;">
+                                            <img src="{!$Resource.loading}" style="width:60%;" alt="User avatar"/>
+                                        </div>
+                                    </div>
+                                </aura:if>
+                            </div> 
+                            <div class="slds-grid slds-wrap"  >
+                                <div id="previewId" style="display:none">  
+                                    <img id="output" style="max-width:15%;"/> 
+                                    <div id="dltBtn" style="visibility:hidden">
+                                        <lightning:icon iconName="action:delete" onclick="{!c.deselectFile}" alternativeText="Delete" title="Delete" size="small"/>
+                                    </div>
+                                </div>
+                                <div style="width:100%;padding: 20px 0px;">
+                                    <input  label="" onkeypress="{!c.handleMegssage}" id="msg" value="{! v.message1 }" onpaste="{!c.handleMegssage}" onkeyup="{!c.handleEnter}" placeholder="" class="one" />  
+                                    <aura:if isTrue="{!v.isMessages}">
+                                        <div class="exampleHolder">
+                                            <lightning:spinner alternativeText="Loading" size="small" variant  = "brand"/>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                                <div class="slds-m-top_x-large"></div>
+                                <!-- 16-06-2023 This commented as per client not wanted to release for now for attachment feature -->
+                                <div>
+                                    
+                                    <div class="btnss" >
+                                        <!--  <div>                               
+                                        <i><lightning:buttonIcon class="iconcsss"  size="large" iconName="utility:attach" variant="bare" onclick="{!c.openUpload}"   alternativeText="Attach"  /></i>
+                                        <input type="file" id="file" aura:id="file"  style="display: none" name="image" accept="image/gif,image/jpeg,image/jpg,image/png" multiple="" onchange="{!c.previewUrl}"  />
+                                        
+                                    </div>-->
+                                        <div >
+                                            <lightning:buttonIcon class="iconcsss" size="large" iconName="utility:send" variant="bare"  onclick="{!c.sendMessage1}" alternativeText="Send" title="Send" />
+                                            
+                                        </div>
+                                    </div>
+                                </div> 
+                            </div>
+                            <aura:set attribute="else">
+                                <div style ="text-align: center; margin: 150px;font-size: large;"> Select a parent to chat...</div>
+                            </aura:set>
+                        </aura:if>
+</div>
+                    <aura:set attribute="else">
+                        <div class="exampleHolder" style="text-align:center; margin-top: 20rem">
+                            <lightning:spinner alternativeText="Loading" size="large" variant  = "brand"/>
+                        </div>
+                    </aura:set>
+                </aura:if>     
+            </div> 
+            <!-- <aura:set attribute="else">
+        <div style="text-align: -webkit-center;">
+         <div class="slds-grid slds-wrap chtRoom" aura:id="cht-room" onclick="{!c.enterChatRoom}">
+           <p>Click To Enter Into Chat Room </p>
+         </div>
+        </div>
+   </aura:set> -->
+        </aura:if> 
+    </div>    
+</aura:component>
+==============================JS Controller===================================================================================================
+({ 
+    doInit: function(component, event, helper) {
+       // alert('doint');
+        // for current login user
+        helper.crrUser_helper(component, event, helper);
+        helper.doinit_helper(component, event, helper);
+       // helper.doOnRender(component,event,helper);
+        //helper.autoRefreshMessage(component, event, helper);
+       
+        // for closing refresh when user moves on another tab
+      /*  window.addEventListener('click',function(e){
+            let elem = e.target;
+            console.log('>>>>>e>>>>>'+ e);
+            console.log('--'+e.clientX);
+            console.log('..'+e.clientY);
+            if((elem.nodeName == 'BODY') || elem.nodeName == 'HTML'){
+                 window.clearInterval(component.get("v.timeInterval"));
+                 component.set("v.truthy", false); 
+                 let elem = document.querySelectorAll('.highlight');
+              elem.forEach(d=>{
+              d.classList.remove('highlight');
+              });
+            } 
+            else{
+               helper.pollApex(component, event, helper); 
+            }
+        }) */
+        helper.pollApex(component, event, helper);
+        var myDiv = document.getElementById("previewId");
+        //myDiv.setAttribute("style", "background:text-align: center;padding: 10px;");   
+        var myDelteButtomn = document.getElementById("dltBtn");
+        //myDelteButtomn.setAttribute("style","display:none;");
+    },
+    
+    enterChatRoom: function(component, event, helper){
+    // component.set('v.isStartChat',!component.get('v.isStartChat'));
+       /* if(component.get('v.isLoading')){
+         component.set('v.isStartChat',!component.get('v.isStartChat'));
+        } */
+   },
+    openUpload :function(component, event, helper) {
+        let obj = component.find('file');
+        if(obj)
+            obj.getElement().click();
+      },
+    handleMegssage : function(component, event, helper) {
+         console.log('old msg>>>'+component.get('v.message1'));
+        var msgElem = document.getElementById('msg'); ;
+        msgElem.addEventListener('input',function(event){
+       component.set('v.message1',event.target.value);            
+        }, 500);
+            
+    },
+    deselectFile:function(component, event, helper){
+               //var fileInput=document.getElementById("output"); 
+              var elem= document.getElementById("previewId");
+        elem.setAttribute("style","display:none");
+        var myDelteButtomn = document.getElementById("dltBtn");
+        myDelteButtomn.setAttribute("style","visibility:hidden"); 
+       document.getElementById('file').value='';
+                  },
+    previewUrl : function(c,e,h){
+         var myDiv = document.getElementById("previewId");
+        myDiv.setAttribute("style", "background:#d3d3d369;text-align: center;padding: 10px; display:block");
+         var myDelteButtomn = document.getElementById("dltBtn");
+        myDelteButtomn.setAttribute("style","visibility:visible");
+        var output = document.getElementById('output');
+        output.src = URL.createObjectURL(e.target.files[0]);
+        output.onload = function() {
+            URL.revokeObjectURL(output.src) 
+            //document.getElementById('previewId').style.display = "block";
+        }  
+        let base64Image;
+        toDataUrl(output.src,function(x){
+            base64Image = x;
+            
+        })
+        function toDataUrl(url, callback) {
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function() {
+                var reader = new FileReader();
+                reader.onloadend = function() {
+                    callback(reader.result);
+                }
+                reader.readAsDataURL(xhr.response);
+            };
+            xhr.open('GET', url);
+            xhr.responseType = 'blob';
+            xhr.send();
+        }
+        
+        
+    },
+    selected_Parent: function(component, event, helper) {
+       // alert('call');
+        var ema_DevId = event.target.dataset.label;
+        let elem = document.querySelectorAll('.highlight');
+        elem.forEach(d=>{
+            d.classList.remove('highlight');
+        });
+            console.log('==>'+ema_DevId);
+            if(ema_DevId){
+            event.currentTarget.classList.add('highlight');
+            var ema_DId = ema_DevId.split('_Devide_');
+            component.set('v.p_DeviceId' , ema_DId[1]);
+            component.set('v.setEmail' , ema_DId[0]);
+            component.set('v.p_Name' , ema_DId[2]);
+            component.set('v.p_Image' , ema_DId[3]);
+           helper.getMessages(component, event,helper, component.get('v.setEmail'));
+        }
+    },
+    Refresh_chat: function(component, event, helper) {
+        helper.selected_Parent_Helper(component, event, helper,component.get('v.setEmail'));
+    },
+    showchat: function(component, event, helper) {
+        component.set("v.truthy", true);
+    },
+    sendMessage: function(component, event, helper) {
+        var action2 = component.get("c.sendfromparent");
+        action2.setParams({
+            str: component.get("v.message"),
+            emid: component.get("v.setEmail")
+        });
+        action2.setCallback(this, function(response) {
+            var state = response.getState();
+            if (state === "SUCCESS") {
+                var c1 = response.getReturnValue();
+                var a = component.get("v.chatmes");
+                a.push(c1);
+                component.set("v.chatmes", a);
+                
+            }
+        });
+        $A.enqueueAction(action2);
+    },
+    handleEnter: function(component, event, helper){
+        console.log(event.key)
+        event.key =="Enter" || event.keyCode ==13? $A.enqueueAction(component.get('c.sendMessage1')): 'none';
+            },       
+    sendMessage1: function async(component, event, helper) {
+        var  message = component.get("v.message1");
+        //alert('==aletr>'+event.target.value);
+      
+       // alert('==>'+message);
+        component.set("v.message1",'')
+        component.set("v.isEnable",!component.get("v.isEnable"));
+         component.set("v.isMessages",true);
+       // var fileInput=document.getElementById("file");  
+        //var file = fileInput.files[0];
+        if(message && message.trim() != ''){
+            helper.sendMessage1_helper(component, event, helper,message);   
+        } 
+        //else if(file != undefined){
+         //  component.set('v.showloader' , true);
+           // helper.sendImage_helper(component, event, helper);  
+       // } 
+            else {
+            component.set("v.isMessages",false);
+            
+             var x = document.getElementById("snackbar");
+          x.className = "show";
+          setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+           
+        } 
+    },
+    mouseover : function async(component, event, helper) {
+        //console.log(event);
+        event.currentTarget.style.background = '#e5e5e5';
+    },
+    mouseout : function async(component, event, helper) {
+       // console.log(event);
+        event.currentTarget.style.background = 'transparent';
+    }, 
+    findParentsStartsWith: function(component, event, helper){
+        
+        var inputValue= component.find('enter-search').get('v.value'); 
+        console.log('===>'+inputValue);
+                 helper.searchParentLoad(component, event, helper,inputValue);
+         
+            },  
+    searchParent: function(component, event, helper){
+        var actualParent = component.get("v.Parentinfo");
+        var  parentsMap =  component.get("v.searchParentHashMap");
+        var inputValue= component.find('enter-search').get('v.value'); 
+        var searchList = [];
+       var parentsList =component.get('v.parentNamesList');
+        setTimeout(()=>{ 
+               if(inputValue !='undefined' && inputValue !='' && inputValue !=null){
+            let newList = [];
+            newList =  parentsList.filter((names)=> {return names.includes(inputValue.toUpperCase())});
+            console.log(JSON.stringify(newList));
+            if(newList.length>0){
+              //  alert(parentsList.indexOf(inputValue.toUpperCase()))
+                newList.forEach(obj=>{
+                searchList.push(parentsMap[obj]);
+                })
+            }
+    /*    parentsList.includes((obj)=>{
+                var names = obj.toUpperCase();
+                //if(names.indexOf(inputValue.toUpperCase())>-1){
+                if(inputValue.toUpperCase() == names)
+                 searchList.push(parentsMap[names]);
+          //  }
+            });  */
+        }
+        if(searchList.length>0)     
+            component.set("v.Parentinfo",searchList);
+        if(helper.count ==0){
+            helper.parents =actualParent;
+            helper.count =1;    
+        }
+        if(helper.count ==1 && searchList.length ==0)
+            component.set("v.Parentinfo",helper.parents);
+        },200); 
+     
+    }
+});
+===============================================================HELPER JS=========================================================================================
+({
+    count : 0,
+    parents: [],
+    countMsg:0,
+    refreshCount :0,
+    load:0,
+    prevMsgCount:0,
+    searchParenthMap:{},
+    pollApex : function(component, event, helper) { 
+        //alert('injj');
+        window.clearInterval(component.get("v.timeInterval")); 
+        helper.autoRefreshMessage(component,event,helper);
+        let refreshIntervalId = window.setInterval($A.getCallback(function() {
+            helper.autoRefreshMessage(component,event,helper)
+        }),20000); 
+        component.set('v.timeInterval',refreshIntervalId);
+    },
+    autoRefreshMessage : function(component, event, helper){
+        var action = component.get("c.reqTorespone");
+        //component.set("v.isEnable",!component.get("v.isEnable"));
+        // alert('action'+action);
+        if(action){
+            action.setParams({ emid: 'test'});
+            action.setCallback(this, function(response) {
+                var state = response.getState();
+                let newMsgCount = 0;
+                this.refreshCount +=1; 
+                console.log('stt refresh---->',state);
+                //  console.log('stt refresh1---->',response.getReturnValue().length);
+                if (state === "SUCCESS" && response.getReturnValue() && response.getReturnValue().length>0) {
+                    var newResponse = response.getReturnValue();
+                    console.log('===>'+JSON.stringify(newResponse)); 
+                    var oldMap = component.get('v.mapOfObj');
+                    var newMap =newResponse.reduce((group,obj)=>{
+                        const {salesforce_parent_id} = obj;
+                                                   if(!group[salesforce_parent_id])
+                    group[salesforce_parent_id] =[];
+                    group[salesforce_parent_id].push(obj);
+                    return group;
+                },{});
+                var newMsg  =[];
+                var oldMsgId ={};
+                var newMsgId = {};
+                var allMessages ={}
+                // console.log('='+JSON.stringify(newMap));
+                // console.log('oldmap'+JSON.stringify(oldMap));
+                /*   newResponse.forEach((msgObj)=>{
+                   if(allMessages[msgObj.parent_id]){
+                   allMessages[msgObj.parent_id].push(msgObj);
+                   }
+                else{
+                     allMessages[msgObj.parent_id] =[];              
+                  }
+               }); */
+               //console.log('---old>'+JSON.stringify(oldMap));
+               // console.log('---new>'+JSON.stringify(newMap));
+               for(var key in newMap){
+                   console.log('pawan',key);
+                   // console.log(oldMap[key].length != newMap[key].length);
+                   if(oldMap[key] && newMap[key]){
+                       if(oldMap[key].length != newMap[key].length){
+                           newMap[key].forEach((obj)=>{
+                               console.log('--->'+!obj.teacher_message);
+                               if(!newMsgId.hasOwnProperty(obj.u_msg_id) && (!obj.teacher_message) && obj.u_msg_id) newMsgId[obj.u_msg_id] =obj;
+                           })
+                               oldMap[key].forEach((obj)=>{
+                               if(!oldMsgId.hasOwnProperty(obj.u_msg_id) && (!obj.teacher_message))oldMsgId[obj.u_msg_id] =obj;
+                           })    
+                               //  newMsg.push(newMap[key]);
+                               console.log('---old'+oldMsgId.length);
+                               console.log('new---'+newMsgId.length);
+                           }
+                           }
+                           } 
+                               let Id_list = component.get('v.newMsgId');  
+                               console.log('new---'+JSON.stringify(newMsgId));
+                               // alert(JSON.stringify(Id_list));
+                               for(var key in newMsgId){
+                               if(newMsgId[key].IsRead == 'false' && (newMsgId[key].parent_message || newMsgId[key].download_url)){
+                               newMsg.push(newMsgId[key]); 
+                               console.log('>>>>>>>>'+Id_list.hasOwnProperty(newMsgId[key].salesforce_parent_id));
+                               oldMap[newMsgId[key].salesforce_parent_id].push(newMsgId[key]);
+                               if(Id_list.hasOwnProperty(newMsgId[key].salesforce_parent_id) && newMsgId[key].IsRead == 'false'){
+                               Id_list[newMsgId[key].salesforce_parent_id].push(newMsgId[key].u_msg_id);
+                           }
+                               else{
+                               if(newMsgId[key].IsRead == 'false' && (newMsgId[key].parent_message|| newMsgId[key].download_url)){
+                               Id_list[newMsgId[key].salesforce_parent_id]=[];
+                               Id_list[newMsgId[key].salesforce_parent_id].push(newMsgId[key].u_msg_id);  
+                           }
+                           }
+                           };
+                           }
+                               console.log('>>>Id_list>>>>>'+JSON.stringify(Id_list));
+                               component.set('v.newMsgId',Id_list);    
+                               var newMsgCnt = newMsg.reduce((acc,obj)=>{
+                               acc[obj.salesforce_parent_id] = (acc[obj.salesforce_parent_id]||0) + 1;
+                               return acc;
+                           },{});
+                               console.log('newMsgCnt==>'+newMsgCnt);
+                               
+                               var myParents = component.get('v.Parentinfo');
+                               //console.log('newMap>>'+JSON.stringify(newMap));
+                               myParents.forEach((obj,i)=>{
+                               if(!newMap.hasOwnProperty(obj.Email)){
+                               newMap[obj.Email] =[];
+                           }
+                               
+                               if(newMsgCnt[obj.Email]) {
+                               console.log('obj.count>>'+obj.count)
+                               // if(component.get('v.setEmail') !=obj.parent_id)
+                               obj.count = obj.count?newMsgCnt[obj.Email]: newMsgCnt[obj.Email];
+                               var temp = myParents.splice(i,1);
+                               myParents.splice(0,0,temp[0]);
+                               temp =[];
+                               newMsgCount += obj.count;
+                           }
+                                               })  
+                           newMsgCnt ={};
+                           // component.set('v.newMsgCount',newMsgCnt);
+                           // Sort Parents ==
+                           
+                           
+                           
+                           console.log('old>>'+JSON.stringify(newMap));
+                           component.set('v.mapOfObj',newMap);
+                           var pEmail = component.get('v.setEmail');
+                           
+                           //console.log('----oldMap[pEmail].length>>>',oldMap[pEmail].length);
+                           //console.log('----newMap[pEmail].length>>>',newMap[pEmail].length);
+                           // show new messages along with old
+                           if(pEmail){
+                              // console.log(this.countMsg+'hbjj'+ newMap[pEmail].length);
+                               if(newMap[pEmail]){
+                               if(newMap[pEmail] &&  newMap[pEmail].length !=this.countMsg){
+                                   //component.set('v.mapOfObj',newMap);
+                                   this.countMsg = newMap[pEmail].length;
+                                   console.log('----oldMap[pEmail].length>>>',oldMap[pEmail].length);
+                                   console.log('----newMap[pEmail].length>>>',component.get("v.mapOfObj")[pEmail].length);
+                                   component.set("v.chatmes", component.get("v.mapOfObj")[pEmail]);
+                                   window.setTimeout(function(){
+                                       let elem = document.querySelectorAll('.chtScroll');
+                                       //console.log(elem,'tests',elem[0].scrollTo);  
+                                       if(elem && elem.length > 0){
+                                           elem[0].scrollTop = elem[0].scrollHeight;
+                                       } 
+                                   },500);  
+                                   
+                               }
+                               }
+                           }
+                       }
+                       // Scroller logic here
+                       console.log(newMsgCount +'=='+this.prevMsgCount);
+                       if(this.prevMsgCount == 0  || newMsgCount != this.prevMsgCount){
+                           //  alert('00'+myParents);
+                           if(response.getReturnValue() && response.getReturnValue().length>0)
+                               component.set('v.Parentinfo',myParents);
+                          // component.set('v.isLoading',!component.get('v.isLoading'));
+                           helper.doOnRender(component, event, helper);
+                           this.prevMsgCount = newMsgCount;
+                       }     
+                       
+                   });
+                   $A.enqueueAction(action);
+               }
+        },
+    getMessages: function(component, event, helper,parentEmail){
+            //    alert('call');
+            console.log('parentEmail>>'+parentEmail);
+            console.log('component.get"v.mapOfObj">>'+JSON.stringify(component.get("v.mapOfObj")));
+            if(component.get("v.mapOfObj")[parentEmail]){
+                console.log('>>>'+JSON.stringify(component.get("v.mapOfObj")[parentEmail]));
+                let chtMsg = component.get("v.mapOfObj")[parentEmail];
+             //      console.log(chtMsg[chtMsg.length -1].LastChatTime);
+             //    console.log( mapParents[parentEmail].LastChatTime);
+                if(chtMsg.length> 0){
+                    var mapParents = component.get('v.mapEmailToParents');
+                    if(chtMsg[chtMsg.length -1].LastChatTime != mapParents[parentEmail].LastChatTime){
+                        helper.updateLastChatTime(component, event, helper,chtMsg[chtMsg.length -1].LastChatTime,parentEmail);
+                    }
+                }
+                console.log('chatselect-->'+JSON.stringify(component.get("v.mapOfObj")[parentEmail]));
+                component.set("v.chatmes", component.get("v.mapOfObj")[parentEmail]);
+                var MsgCount = component.get('v.newMsgCount');
+                var new_MsgId = component.get('v.newMsgId')[parentEmail];
+                window.setTimeout(function(){
+                    let elem = document.querySelectorAll('.chtScroll');
+                    console.log(elem,'tests',elem[0].scrollTo);  
+                    if(elem && elem.length > 0){
+                        elem[0].scrollTop = elem[0].scrollHeight;
+                    } 
+                },500);
+                var parentList = component.get('v.Parentinfo');
+                parentList.forEach((obj,i)=>{
+                    if(obj.Email ==parentEmail){
+                    obj.count=0;
+                }
+                                   }); 
+                console.log('>>>new Id>>'+new_MsgId);
+                if(new_MsgId){
+                    var action = component.get("c.updateReadMessage");
+                    console.log('new_MsgId>>>'+new_MsgId)
+                    // var list_id = component.get("v.newMsgId");
+                    action.setParams({
+                        msg_ids :new_MsgId 
+                    });
+                    action.setCallback(this, function(response) {
+                        var state = response.getState();
+                        if (state === "SUCCESS") {
+                            var res = response.getReturnValue();
+                            // ;
+                            //  new_MsgId =[];
+                            component.set('v.new_MsgId',component.get('v.newMsgId')[parentEmail] =[]);
+                            console.log('--res>'+res);
+                        }
+                    });
+                    $A.enqueueAction(action);
+                } 
+                
+                component.set('v.Parentinfo',parentList);  
+                component.set('v.newMsgCount',MsgCount);  
+                //  component.set('v.newMsgId',new_MsgId);  
+                component.set("v.truthy", true); 
+            }
+            else{
+                component.set("v.chatmes",[]);
+            }
+            // Remove selected file this parent
+            var files =document.getElementById("output");
+            
+            console.log(files);
+            if(files){
+                document.getElementById("output").setAttribute('src', '');
+                var myDiv = document.getElementById("previewId");
+                myDiv.setAttribute("style", "background:;text-align: center;padding: 10px;display:none"); 
+                // alert(document.getElementById("file").value);
+                //  document.getElementById("file").value='';  
+                var myDelteButtomn = document.getElementById("dltBtn");
+                myDelteButtomn.setAttribute("style","visibility:hidden"); 
+            }
+        },
+    updateLastChatTime :function(component, event, helper,lastChtTime,pEmail){
+                console.log(lastChtTime+'=='+pEmail)
+                var action = component.get("c.updateLastChatDateAndTime");
+                action.setParams({
+                    pEmail:pEmail,
+                    chtDateTime :lastChtTime
+                });
+                action.setCallback(this,function(response){
+                    var state = response.getState();
+                    console.log(state);
+                    if(state ==='SUCCESS'){
+                        
+                    }
+                });
+                $A.enqueueAction(action);
+            },
+    sendMessage1_helper :function(component, event, helper,message){
+                    var p_DeviceId = component.get('v.p_DeviceId');
+                    console.log(p_DeviceId);
+                    var p_Name = component.get('v.p_Name');
+                    var p_Image = component.get('v.p_Image');
+                    var preview_url = component.get('v.preview_url');
+                    console.log(p_Name);
+                    console.log(p_Image);
+                    console.log(preview_url);
+                    console.log(message);
+                    var action3 = component.get("c.sendfromteacher");
+                    action3.setParams({
+                        strd: message,
+                        emid: component.get("v.setEmail"),
+                        p_DeviceId: p_DeviceId,
+                        p_Name : p_Name,
+                        preview_url : preview_url,
+                        p_Image : p_Image
+                    });
+                    action3.setCallback(this, function(response) {
+                        var state = response.getState();
+                        if (state === "SUCCESS") {
+                            var c2 = response.getReturnValue();
+                            console.log(JSON.stringify(c2));
+                            var a1 = component.get("v.chatmes");
+                            a1.push(c2);
+                            component.set("v.chatmes", a1);
+                            component.set('v.message1' , '');
+                            component.set('v.showloader' , false);
+                            const img = document.getElementById('output');
+                            //document.getElementById('previewId').style.display = "none";
+                            img.setAttribute('src', '');
+                            var elem= document.getElementById("previewId");
+                            elem.setAttribute("style","display:none");
+                            var myDelteButtomn = document.getElementById("dltBtn");
+                            myDelteButtomn.setAttribute("style","visibility:hidden"); 
+                            window.setTimeout(function(){
+                                let elem = document.querySelectorAll('.chtScroll');
+                                console.log(elem,'tests',elem[0].scrollTo);  
+                                if(elem && elem.length > 0){
+                                    elem[0].scrollTop = elem[0].scrollHeight;
+                                } 
+                            },500);
+                            component.set("v.isMessages",false);
+                            helper.autoRefreshMessage(component, event, helper);
+                        }
+                        else{
+                            console.log('='+state);
+                        }
+                    });
+                    $A.enqueueAction(action3);
+                    // Read Message feature
+                    var pEmail =component.get("v.setEmail") 
+                    var new_MsgId = component.get('v.newMsgId')[pEmail];      
+                    if(new_MsgId){
+                        var action = component.get("c.updateReadMessage");
+                        console.log('new_MsgId>>>'+new_MsgId)
+                        // var list_id = component.get("v.newMsgId");
+                        action.setParams({
+                            msg_ids :new_MsgId 
+                        });
+                        action.setCallback(this, function(response) {
+                            var state = response.getState();
+                            if (state === "SUCCESS") {
+                                var res = response.getReturnValue();
+                                // ;
+                                //  new_MsgId =[];
+                                component.set('v.new_MsgId',component.get('v.newMsgId')[pEmail] =[]);
+                                console.log('--res>'+res);
+                            }
+                        });
+                        $A.enqueueAction(action);
+                    } 
+                    
+                },
+    MAX_FILE_SIZE: 750000, 
+    sendImage_helper : function(component,event, helper) {
+                            var fileInput=document.getElementById("file");  
+                            // var fileInput = component.find("file").getElement();
+                            var file = fileInput.files[0];
+                            if (file.size > this.MAX_FILE_SIZE) {
+                                alert('File size cannot exceed ' + this.MAX_FILE_SIZE + ' bytes.\n' + 'Selected file size: ' + file.size);
+                                const img = document.getElementById('output');
+                                img.setAttribute('src', '');
+                                confirm('𝐏𝐥𝐞𝐚𝐬𝐞 𝐂𝐡𝐨𝐨𝐬𝐞 𝐎𝐭𝐡𝐞𝐫 𝐅𝐢𝐥𝐞...')
+                                document.getElementById("file").value='';
+                                var myDiv = document.getElementById("previewId");
+                                myDiv.setAttribute("style", "background:;text-align: center;padding: 10px;"); 
+                                console.log('==>'+file);
+                                component.set("v.isMessages",false);
+                                component.set("v.showloader",false);
+                                return;
+                            }
+                            
+                            var fr = new FileReader();
+                            
+                            var self = this;
+                            fr.onload = function() {
+                                var fileContents = fr.result;
+                                var base64Mark = 'base64,';
+                                var dataStart = fileContents.indexOf(base64Mark) + base64Mark.length;
+                                
+                                fileContents = fileContents.substring(dataStart);
+                                
+                                self.upload(component,event,helper, file, fileContents);
+                            };
+                            
+                            fr.readAsDataURL(file);
+                        },
+    upload: function(component,event,helper, file, fileContents) {
+                                var action = component.get("c.saveTheFiles"); 
+                                action.setParams({
+                                    fileName: file.name,
+                                    base64Data: fileContents,
+                                    contentType: file.type
+                                });
+                                
+                                action.setCallback(this, function(response) {
+                                    var state = response.getState();
+                                    console.log(state);
+                                    if (state === "SUCCESS") {
+                                        var preview_url = response.getReturnValue();
+                                        console.log('==>'+preview_url);
+                                        component.set('v.preview_url' , preview_url);
+                                        var myDiv = document.getElementById("previewId");
+                                        myDiv.setAttribute("style", "background:;text-align: center;padding: 10px;");     
+                                        if(preview_url){
+                                            helper.sendMessage1_helper(component,event,helper,'');
+                                        }
+                                        document.getElementById("file").value='';
+                                    }
+                                });
+                                $A.enqueueAction(action); 
+                            },
+    doinit_helper : function(component, event, helper){
+                                    var action = component.get("c.returnAllParents");
+                                    //  alert('kjd');
+                                    action.setCallback(this, function(response) {
+                                        var state = response.getState();
+                                        console.log(state)
+                                        if (state === "SUCCESS") {
+                                            var cont=[];
+                                            var a = response.getReturnValue(); 
+                                            console.log('parentmsge-->',a);
+                                            // console.log(JSON.stringify(a['parents']));
+                                            if(a != null && a != undefined){
+                                                var maObj =component.get('v.mapOfObj');
+                                                var mapParents = component.get('v.mapEmailToParents');
+                                                
+                                                for(var i=0;i<a.length;i++){
+                                                    //  console.log(a.parents[i].Name);
+                                                    if(a[i].Name!='null'){
+                                                        if(i == 1){
+                                                            a[i].Image="https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885__340.jpg"; 
+                                                        }
+                                                        cont.push(a[i]);  
+                                                        mapParents[a[i].Email]= a[i];
+                                                        maObj[a[i].Email] =[];
+                                                    }
+                                                }
+                                               // alert(JSON.stringify(maObj));
+                                                component.set('v.mapEmailToParents',mapParents)
+                                                component.set('v.mapOfObj',maObj); 
+                                                component.set('v.Parentinfo',a);
+                                                console.log('test1191-->'+JSON.stringify(a));
+                                                component.set('v.isLoading',!component.get('v.isLoading')); 
+                                                 component.set('v.isSearchFound',!component.get('v.isSearchFound')); 
+                                            } else {
+                                                //component.set('v.isLoading',!component.get('v.isLoading')); 
+                                                var toastEvent = $A.get("e.force:showToast");
+                                                toastEvent.setParams({
+                                                    "title": "Error!",
+                                                    "type": "Error",
+                                                    "message": "No Parent Found Under This Teacher! Sorry."
+                                                });
+                                                toastEvent.fire();
+                                                if(this.refreshCount<2)location.reload(true);
+                                            }
+                     let updatedParentsList = cont.filter((mObj)=>{return mObj;}).sort((pObjA ,pObjB) =>{return new Date(pObjB.LastChatTime) - new Date(pObjA.LastChatTime);})
+                       //    console.log('==<>'+JSON.stringify(updatedParentsList))
+                   component.set('v.Parentinfo',updatedParentsList);
+                //   component.set('v.ParentinfoBackup',updatedParentsList);
+
+                                          //  component.set("v.Parentinfo", cont); 
+                                        }
+                                        
+                                    });
+                                    $A.enqueueAction(action);
+                                },
+    crrUser_helper : function(component, event, helper){
+                                        var action = component.get("c.crrntuser");
+                                        action.setCallback(this, function(response) {
+                                            var state = response.getState();
+                                            if (state === "SUCCESS") {
+                                                var a = response.getReturnValue(); 
+                                                component.set("v.userObj", a);
+                                            }
+                                        });
+                                        $A.enqueueAction(action);
+                                    },
+                                        doOnRender :function(component,evnt,helper){
+                                            let MapMessages = component.get('v.mapOfObj');
+                                            let parentsList = component.get('v.Parentinfo');
+                                            let lastMessagesList = [];
+                                            let unChtMessagesList = [];
+                                            console.log('==refrshh=>'+this.refreshCount);
+                                            // console.log('==MapMessages=>'+JSON.stringify(MapMessages));
+                                            console.log('==parentsList=>'+JSON.stringify(parentsList));
+                                            if(parentsList.length==0 && this.refreshCount >1 && this.refreshCount<5){
+                                                //    component.set('v.isLoading',!component.get('v.isLoading'));
+                                                var toastEvent = $A.get("e.force:showToast");
+                                                toastEvent.setParams({
+                                                    title : 'Info',
+                                                    message: 'Parents are not available from staff directory!',
+                                                    duration:' 5000',
+                                                    key: 'info_alt',
+                                                    type: 'info',
+                                                    mode: 'dismissible'
+                                                });
+                                                toastEvent.fire();
+                                                let intVlid = component.get('v.timeInterval');
+                                                clearInterval(intVlid);
+                                            }
+                                            else{
+                                                try{
+                                                    let checkIsZeroMsg = false;
+                                                    parentsList && parentsList.forEach((pNames)=>{
+                                                        // console.log('pnam'+pNames);
+                                                        //    console.log('Lastpnam===>'+pNames.LastChatTime)
+                                                        if(MapMessages.hasOwnProperty(pNames.Email)){
+                                                        let tempList = MapMessages[pNames.Email];
+                                                        let msgObj = tempList.length > 0? tempList[tempList.length-1] :undefined;
+                                                        if(msgObj){
+                                                        let pObj ={}
+                                                                                       //  console.log('===>msg'+JSON.stringify(msgObj));
+                                                                                       // console.log('===>pNames'+JSON.stringify(pNames));
+                                                                                       let time = msgObj.LastChatTime.split(' ');
+                                                    let hourAndMinut = time[4].split(':');
+                                                    let hour =  hourAndMinut[0].length==1 ?'0'+hourAndMinut[0]:hourAndMinut[0];
+                                                    pObj = msgObj && msgObj.hasOwnProperty('LastChatTime') ? Object.assign({}, pNames, {LastChatTime: hour+':'+hourAndMinut[1]+''+time[5]}) :pNames;
+                                                    console.log('===>pObj'+JSON.stringify(pObj));
+                                                    lastMessagesList.push(pObj);
+                                                }
+                                                else{
+                                                    console.log('LastChatTime===>'+pNames.LastChatTime)
+                                                    pNames.LastChatTime ='';
+                                                    unChtMessagesList.push(pNames); 
+                                                    // console.log('LastChatTime===>'+pNames.LastChatTime)
+                                                }
+                                                
+                                            }}) 
+                                            let chatInitiated = lastMessagesList.filter((mObj)=>{if(mObj.hasOwnProperty('LastChatTime')) return mObj;}).sort((pObjA ,pObjB) =>{return new Date(pObjB.LastChatTime) - new Date(pObjA.LastChatTime);}) ;
+            let chatNotInitiated = unChtMessagesList.filter((mObj)=>{if(mObj.hasOwnProperty('LastChatTime')) return mObj.Name !="";}).sort((pObjA ,pObjB)=>{
+                if(pObjA.Name  <pObjB.Name) { return -1; }
+                                                                                                                                           if(pObjA.Name > pObjB.Name) { return 1; }
+            return 0;
+        });
+        let updatedParentsList = [...chatInitiated,...chatNotInitiated];
+        
+        //  updatedParentsList = updatedParentsList.filter((mObj)=>{return mObj;}).sort((pObjA ,pObjB) =>{return new Date(pObjB.LastChatTime) - new Date(pObjA.LastChatTime);})
+        console.log('==cht'+JSON.stringify(chatInitiated))
+        console.log('==uncht'+JSON.stringify(chatNotInitiated))
+        
+        component.set('v.Parentinfo',updatedParentsList);
+        //  component.set('v.ParentinfoBackup',updatedParentsList);
+        
+        let obj ={};
+        let parentnamesList =[];
+        updatedParentsList.forEach(searchObj =>{
+            if(searchObj.Name.toUpperCase()){
+            obj[searchObj.Name.toUpperCase()] =searchObj;
+            parentnamesList.push(searchObj.Name.toUpperCase());
+        }
+                                   })
+        component.set('v.searchParentHashMap',obj);
+        //component.set('v.parentNamesList',parentnamesList);
+        
+        console.log('==>'+JSON.stringify(obj));
+        if(this.refreshCount >=0 && updatedParentsList.length>0 && !component.get('v.isLoading')){
+            //       component.set('v.isLoading',!component.get('v.isLoading'));
+            console.log('--');
+        }
+    }
+    catch(error){
+    console.log(JSON.stringify(error));
+}
+ }
+ }, 
+ searchParentLoad:function(component,evnt,helper,searchString){
+               var action = component.get("c.searchParentStartWithChar");
+
+    if(searchString.trim() && searchString.trim().length>0){
+        action.setParams({
+            searchKey:searchString
+        });
+        action.setCallback(this,function(resp){
+            var state = resp.getState();
+            console.log('mxbvbsearch------------>'+state);
+            if(state ==='SUCCESS' && resp.getReturnValue()){
+                console.log('cnxbdnfbj');
+                component.set("v.ParentinfoBackup",resp.getReturnValue());
+                component.set('v.isSearchFound',true);
+                component.set('v.issearchLoading',!component.get('v.issearchLoading'));
+                // if(inputValue.trim().length == 0)component.set('v.issearchLoading',!component.get('v.issearchLoading'));
+         
+            }
+        });
+      //  setTimeout(()=>{      
+            component.set('v.issearchLoading',!component.get('v.issearchLoading'));
+            component.set('v.isDefaultLoad',false);
+            $A.enqueueAction(action) //},2000);
+        }
+            else{
+            component.set('v.isDefaultLoad',true);
+            console.log('else======>'+JSON.stringify(component.get('v.ParentinfoBackup')));
+            //    component.set('v.ParentinfoBackup',component.get('v.Parentinfo'));
+            
+        }
+        },
+ });
+========================================================================APEX CONTROLLER=======================================================================
+public class Teacher_ParentChat_Cntrl {
+    private static String newMsgid;
+    @auraEnabled
+    public static User crrntuser() {  
+        try{
+            User u = [select id,Name,SmallPhotoUrl,Email,contactId from User where id =: userInfo.getUserId()];
+            return u;
+        } catch(Exception e){
+            system.debug('msge-->'+e.getMessage()+'line-->'+e.getLineNumber());
+        }
+        return null;        
+    }
+    @AuraEnabled
+    public static void updateLastChatDateAndTime(String chtDateTime, String pEmail){
+          System.debug(chtDateTime+'=='+pEmail);
+        // edugo__User_Type__c ='Parent / Guardian' and edugo__Email__c =: pEmail
+        List<edugo__Mobile_App_Credential__c> mobUsersList = new List<edugo__Mobile_App_Credential__c>();
+            for(edugo__Mobile_App_Credential__c emac : [select id , edugo__LastChatTime__c from edugo__Mobile_App_Credential__c where edugo__User_Type__c ='Parent / Guardian' and edugo__Email__c =:pEmail]){
+             emac.edugo__LastChatTime__c = chtDateTime;
+                mobUsersList.add(emac);
+            }
+        update mobUsersList;
+    }
+  /*  @auraEnabled 
+    public static wr_AllParents requestTodata() {  
+        try{
+            wr_AllParents c=new wr_AllParents();
+            User use_Obj = new User(); 
+            List<Contact> c1 = [Select id,Email from Contact where Email = :userinfo.getUserEmail() and Email != null];
+            if(c1.size() > 0){
+                use_Obj = [Select Id,ContactId,SmallPhotoUrl,Name,Email from User  where id=:userinfo.getuserid() Limit 1];
+                // system.debug('use_Obj=>'+use_Obj);
+                edugo__FireBase_Credential__c fiteBase_obj = new edugo__FireBase_Credential__c();
+                fiteBase_obj = [Select id,edugo__UserName__c,edugo__School_Code__c,edugo__Password__c,
+                                edugo__Client_Secrete__c,edugo__ClientId__c,edugo__AccessToken__c,LastModifiedDate
+                                from edugo__FireBase_Credential__c Where edugo__School_Code__c = 'xS' limit 1];
+                if(fiteBase_obj != null ){
+                    Long dt1Long = fiteBase_obj.LastModifiedDate.getTime();
+                    Long dt2Long = DateTime.now().getTime();
+                    Long milliseconds = dt2Long - dt1Long;
+                    Long seconds = milliseconds / 1000;
+                    Long minutes = seconds / 60;
+                    //system.debug('minutes-->'+minutes);
+                    if(minutes > 60){
+                        Teacher_ParentChat_Cntrl.updateAccessToken();  
+                        fiteBase_obj = [Select id,edugo__UserName__c,edugo__School_Code__c,edugo__Password__c,
+                                        edugo__Client_Secrete__c,edugo__ClientId__c,edugo__AccessToken__c,LastModifiedDate
+                                        from edugo__FireBase_Credential__c Where edugo__School_Code__c = 'xS' limit 1];
+                    }
+                    Http h = new Http();
+                    HttpRequest req = new HttpRequest();
+                    string endPointValue = 'https://edugo-dev-ed.my.salesforce.com/services/apexrest/edugo/StaffDirectory';
+                    req.setEndpoint(endPointValue);
+                    string userid=userinfo.getuserid();
+                    system.debug('======>'+userid);
+                    string body='{"conId": "'+c1[0].Id+'", "schoolCode": "'+fiteBase_obj.edugo__School_Code__c+'"}';
+                    req.setBody(body);
+                    req.setHeader('Authorization', ' OAuth '+fiteBase_obj.edugo__AccessToken__c);
+                    req.setHeader('Content-Type', 'application/json');
+                    //req.setHeader('Cookie',  'BrowserId=_nz_AevCEey01ddOHhiKfw; CookieConsentPolicy=0:1; LSKey-c$CookieConsentPolicy=0:1');
+                    req.setMethod('POST');       
+                    HttpResponse res;  
+                    String resBody;
+                    Integer code = 0;
+                    if(!test.isRunningTest()){
+                        res = h.send(req); 
+                        resBody =  res.getBody();
+                        code = res.getStatusCode();
+                    } else {
+                        resBody = '{\"DeviceId\":\"c5FAuBD2SR2dKx2ESDmAuh:APA91bGa6Hv2AsqVlBOp6IsdnwPRmD-21aDFy-q7i6rFvNxFWEfv8ggOQGMnXaPeEE1j8gPxd3HQWYjmB0M3dB5oMewD42QIJtiH1TxGskxn9eIULyaJGHsnFyoyMRaoxoC2jD2gRqvY\" , \"UserType\":\"Staff\", \"staffInfo\" :[{\"DeviceId\" :\"c5FAuBD2SR2dKx2ESDmAuh:APA91bGa6Hv2AsqVlBOp6IsdnwPRmD-21aDFy-q7i6rFvNxFWEfv8ggOQGMnXaPeEE1j8gPxd3HQWYjmB0M3dB5oMewD42QIJtiH1TxGskxn9eIULyaJGHsnFyoyMRaoxoC2jD2gRqvY\", \"Type\" :\"Finance Officer\", \"Image\" :\"https://edugo-dev-ed--c.na207.content.force.com/profilephoto/7298W000001N1Kq/T\",\"Name\" :\"Test\",\"Email\" :\"john@schoolstrust.co.uk\",\"UserId\" :\"0031I00000vldfPQAQ\"}],\"teachers\" :[],\"parents\" :[{\"DeviceId\" :\"null\", \"Type\" :\"Parent\", \"Email\" :\"null\", \"Image\" : \"\",\"Name\" :\"null\",\"UserId\" :\"\"},{\"DeviceId\" :\"null\", \"Type\" :\"Parent\", \"Email\" :\"shyam.2607saini@gmail.com\", \"Image\" : \"\",\"Name\" :\"null\",\"UserId\" :\"\"},{\"DeviceId\" :\"f0bW6ka_SuWO1tHxwKOIRD:APA91bGmINZEyjpTLaR_pvrrCULsJ0rBHvE3QAnWOiL8y4fo77VlW4QHZOaRWdOco-sB61CWGu9Ud9WGxSZct6jLnkzr_-TlEA0e_BooriZkZ3Pm9pkaQdB8s_t3OO_LOnuHkXZW3bmL\", \"Type\" :\"Parent\", \"Email\" :\"manisha.kapoor2995@gmail.com\", \"Image\" : \"\",\"Name\" :\"Technology logy\",\"UserId\" :\"\"},{\"DeviceId\" :\"null\", \"Type\" :\"Parent\", \"Email\" :\"ewffsfd343@ew.com\", \"Image\" : \"\",\"Name\" :\"null\",\"UserId\" :\"\"},{\"DeviceId\" :\"null\", \"Type\" :\"Parent\", \"Email\" :\"girigop02@gmail.com\", \"Image\" : \"\",\"Name\" :\"null\",\"UserId\" :\"\"}]}';  
+                    }
+                    system.debug('code-->'+code);
+                    system.debug('resBody-->'+resBody);
+                    //String resbody1 = resBody.replace('null', '""');
+                    String decodedJson = (String)JSON.deserialize(resBody, String.class);
+                    String rbody = '';
+                    if(!String.isEmpty(decodedJson) && decodedJson != null){
+                        rbody = decodedJson.replaceAll('null', '');
+                    }
+                    if(!test.isRunningTest() && !String.isEmpty(rbody)){ 
+                        c = (wr_AllParents) json.deserialize(rbody, wr_AllParents.class);
+                        system.debug('ccc->'+c.parents);  
+                    }
+                }
+            }
+            return c;  
+        } catch(Exception e){
+            system.debug('msge-->'+e.getMessage()+'Line-->'+e.getLineNumber());
+        }
+        return null;        
+    } */
+      @AuraEnabled
+    public static  List<parents>  searchParentStartWithChar(String searchKey){
+        // edugo__Default_Institution__c
+        user usrObj = [select id,edugo__Default_Institution__c,Email from user  where id=:userinfo.getuserid() Limit 1];
+       
+        Id devRecordTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByName().get('Student').getRecordTypeId();
+        List<contact>conli=[select Id ,edugo__Contact_Role__c,edugo__Entity_Id__c,RecordTypeID  from contact where RecordTypeID=:devRecordTypeId];
+        
+        List<edugo__Enrollment__c> enrolledStudents =new List<edugo__Enrollment__c>(); 
+        enrolledStudents=[select Id , edugo__Student_Group__r.Owner.name, edugo__Student_Group__r.Owner.id, 
+                     edugo__Student_Group__r.Owner.email, edugo__Type__c,edugo__Student_Contact__c,
+                     edugo__Student_Group__r.edugo__Subject__r.name,edugo__Student_Contact__r.edugo__Entity_Id__c,
+                     edugo__Student_Contact__r.OwnerID,edugo__Student_Contact__r.Owner.Name,edugo__Student_Group__c,
+                     edugo__Attending__c from edugo__Enrollment__c 
+                     where edugo__Student_Contact__c in: conli AND edugo__Attending__c=true ];
+        Set<String> sChildEntityIds = new Set<String>();
+        if(enrolledStudents.size()>0){
+            for(edugo__Enrollment__c c: enrolledStudents){sChildEntityIds.add(c.edugo__Student_Contact__r.edugo__Entity_Id__c);
+            }}
+        Id GuardianTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByName().get('Parent / Guardian').getRecordTypeId();
+        set<String>parentsEmail = new set<String>();
+        for(Contact ct: [select Id,email,Owner.email, edugo__Contact_Role__c,edugo__Entity_Id__c,RecordTypeID  from contact where (RecordTypeID=:GuardianTypeId And AccountId in: sChildEntityIds)]){
+            if(ct.email !=null && ct.email !=''){parentsEmail.add(ct.Email); 
+            }            
+        }
+        String key ='%'+searchKey +'%';
+        List<edugo__Mobile_App_Credential__c> mobUsersList= new   List<edugo__Mobile_App_Credential__c>();
+        if(searchKey.length()>0){
+         mobUsersList=[select edugo__Device_ID__c,edugo__LastChatTime__c, id,name,edugo__Mobile_App__c ,edugo__User_Type__c ,edugo__Parent__r.accountId ,edugo__SchoolCode__c, edugo__Email__c,Owner.email,
+                                                            edugo__Parent__r.id from edugo__Mobile_App_Credential__c 
+                                                            where edugo__Mobile_App__c!=null and edugo__Email__c !=null and edugo__User_Type__c ='Parent / Guardian'
+                                                            and edugo__SchoolCode__c=:usrObj.edugo__Default_Institution__c and edugo__Email__c in:parentsEmail and name like : key limit 5];}else{mobUsersList=[select edugo__Device_ID__c,edugo__LastChatTime__c, id,name,edugo__Mobile_App__c ,edugo__User_Type__c ,edugo__Parent__r.accountId ,edugo__SchoolCode__c, edugo__Email__c,Owner.email,
+                                                            edugo__Parent__r.id from edugo__Mobile_App_Credential__c 
+                                                            where edugo__Mobile_App__c!=null and edugo__Email__c !=null and edugo__User_Type__c ='Parent / Guardian'
+                                                            and edugo__SchoolCode__c=:usrObj.edugo__Default_Institution__c and edugo__Email__c in:parentsEmail];   }
+        
+        List<parents> listOfParents =  new List<parents>();//(List<parents>) json.deserialize(JSON.serialize(mobUsersList), List<parents>.class);
+        for(edugo__Mobile_App_Credential__c mac : mobUsersList){parents pt = new parents();pt.DeviceId = mac.edugo__Device_ID__c;pt.Image = '';pt.Name =mac.Name;pt.Email = mac.edugo__Email__c;pt.UserId = '';pt.Type = 'Parent';pt.count = 0;pt.LastChatTime =mac.edugo__LastChatTime__c;pt.LastChatTime = String.isNotBlank(mac.edugo__LastChatTime__c ) ?mac.edugo__LastChatTime__c :'Monday, July 24 2018 05:50:23';listOfParents.add(pt);
+        }
+        System.debug('==>'+listOfParents);
+        return listOfParents;
+    }
+  // Writing it after discussion with client and Ankit Sir and Saurabh Sir Date-21-07-2023
+   @auraEnabled
+    public static  List<parents>  returnAllParents(){
+        // edugo__Default_Institution__c
+        user usrObj = [select id,edugo__Default_Institution__c,Email from user  where id=:userinfo.getuserid() Limit 1];
+       
+        Id devRecordTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByName().get('Student').getRecordTypeId();
+        List<contact>conli=[select Id ,edugo__Contact_Role__c,edugo__Entity_Id__c,RecordTypeID  from contact where RecordTypeID=:devRecordTypeId];
+        
+        List<edugo__Enrollment__c> enrolledStudents =new List<edugo__Enrollment__c>(); 
+        enrolledStudents=[select Id , edugo__Student_Group__r.Owner.name, edugo__Student_Group__r.Owner.id, 
+                     edugo__Student_Group__r.Owner.email, edugo__Type__c,edugo__Student_Contact__c,
+                     edugo__Student_Group__r.edugo__Subject__r.name,edugo__Student_Contact__r.edugo__Entity_Id__c,
+                     edugo__Student_Contact__r.OwnerID,edugo__Student_Contact__r.Owner.Name,edugo__Student_Group__c,
+                     edugo__Attending__c from edugo__Enrollment__c 
+                     where edugo__Student_Contact__c in: conli AND edugo__Attending__c=true ];
+        Set<String> sChildEntityIds = new Set<String>();
+        if(enrolledStudents.size()>0){
+            for(edugo__Enrollment__c c: enrolledStudents){
+                
+                sChildEntityIds.add(c.edugo__Student_Contact__r.edugo__Entity_Id__c);
+            }}
+        Id GuardianTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByName().get('Parent / Guardian').getRecordTypeId();
+        set<String>parentsEmail = new set<String>();
+        for(Contact ct: [select Id,email,Owner.email,edugo__Previous_Email__c, edugo__Contact_Role__c,edugo__Entity_Id__c,RecordTypeID  from contact where (RecordTypeID=:GuardianTypeId And AccountId in: sChildEntityIds)]){
+            if(ct.email !=null && ct.email !=''){
+               parentsEmail.add(ct.Id); 
+            }            
+        }
+        
+         List<edugo__Mobile_App_Credential__c> mobUsersList=[select edugo__Device_ID__c,edugo__LastChatTime__c, id,name,edugo__Mobile_App__c ,edugo__User_Type__c ,edugo__Parent__r.accountId ,edugo__SchoolCode__c, edugo__Email__c,Owner.email,
+                                                            edugo__Parent__r.id from edugo__Mobile_App_Credential__c 
+                                                            where edugo__Mobile_App__c!=null and edugo__Email__c !=null and edugo__User_Type__c ='Parent / Guardian'
+                                                            and edugo__SchoolCode__c=:usrObj.edugo__Default_Institution__c and edugo__Parent__r.id in:parentsEmail];
+        
+        List<parents> listOfParents =  new List<parents>();//(List<parents>) json.deserialize(JSON.serialize(mobUsersList), List<parents>.class);
+        for(edugo__Mobile_App_Credential__c mac : mobUsersList){
+            parents pt = new parents();
+            pt.DeviceId = mac.edugo__Device_ID__c;
+            pt.Image = '';
+            pt.Name =mac.Name;
+            pt.Email = mac.edugo__Email__c;
+            pt.UserId = '';
+            pt.Type = 'Parent';
+            pt.count = 0;
+            pt.LastChatTime = String.isNotBlank(mac.edugo__LastChatTime__c ) ?mac.edugo__LastChatTime__c :'Monday, July 24 2018 05:50:23';
+            listOfParents.add(pt);
+        }
+        return listOfParents;
+    }
+   @auraEnabled
+    public static  list<parents_teacher>  reqTorespone(string emid) {    
+        map<String,String>mapTeacherParent = new map<String,String>();
+        set<string> setMessageId=new set<string>();      
+        list<parents_teacher> parents=new list<parents_teacher>();
+        map<String,parents_teacher>mapMessages = new map<String,parents_teacher>();
+        String teacherEmail= UserInfo.getUserEmail();
+        String email ='"email"';
+        String email1 ='"email1"';
+        String endpoint ='';
+        user usr = [select id,edugo__Default_Institution__c,Email from user  where id=:userinfo.getuserid() Limit 1];
+        if(usr.edugo__Default_Institution__c == 'xS')  { endpoint ='https://aaaa-cba19.firebaseio.com/chat.json?orderBy='+email+'&equalto='+teacherEmail+'&orderby='+email1+'&equalto='+emid;}else if(usr.edugo__Default_Institution__c == 'BSSP'){endpoint = 'https://edugo-db7c7.firebaseio.com/chat.json?orderBy='+email+'&equalto='+teacherEmail+'&orderby='+email1+'&equalto='+emid;}else if(usr.edugo__Default_Institution__c == 'BSL'){endpoint = 'https://british-school-lisbon.firebaseio.com/chat.json?orderBy='+email+'&equalto='+teacherEmail+'&orderby='+email1+'&equalto='+emid; }else if(usr.edugo__Default_Institution__c == 'BSV'){endpoint = 'https://british-school-vilnius.firebaseio.com/chat.json?orderBy='+email+'&equalto='+teacherEmail+'&orderby='+email1+'&equalto='+emid;}
+        Http h = new Http();
+        HttpRequest req = new HttpRequest();      
+        req.setEndpoint(endpoint); 
+        req.setMethod('GET');       
+        HttpResponse res =new HttpResponse(); 
+        String resBody = '';
+        if(!test.isRunningTest())  {res = h.send(req);    resBody = res.getBody();
+        } else {
+            res.setBody('{"-N6lDR51Kw4Nn7dFCGuU":{"chat_id":"1","created_date":"Tuesday, July 12, 2022 12:35:02 PM","email":"john@schoolstrust.co.uk","email1":"manisha.kapoor2995@gmail.com","firstname":"Technology","lastname":"logy","message1":"bhxgfdbgxnfhcgvn m","parent_id":"manisha.kapoor2995@gmail.com","reply":"reply","screen":"admin","teacher_id":"john@schoolstrust.co.uk","teacher_message":"bhxgfdbgxnfhcgvn m","teacher_token":"ADMIN123124"}}');
+            resBody=res.getBody();
+        }
+        System.JSONParser parser = JSON.createParser(resBody);   
+        while(parser.nextToken()!= null) {
+            if(parser.getCurrentToken() == JSONToken.FIELD_NAME) {                
+                setMessageId.add(parser.getCurrentName());   
+            }
+        } 
+        set<string> str=new set<string>{'u_msg_id','IsRead','created_date','email','email1','firstname','lastname','parent_id','parent_message','reply,screen','teacher_id','teacher_token','teacher_message',
+            'chat_id','parent_token','message1','LastChatTime','status','download_url','reply','screen','salesforce_teacher_id','salesforce_parent_id'};
+                setMessageId.removeAll(str);
+        System.JSONParser parser1 = JSON.createParser(resBody);                
+        while(parser1.nextToken()!= null) {
+            if(parser1.getCurrentToken() == JSONToken.FIELD_NAME) {                
+                if(setMessageId.contains(parser1.getText())) {                  
+                    parser1.nextToken();
+                    parents_teacher obj = (parents_teacher)parser1.readValueAs(parents_teacher.class);
+                    mapTeacherParent.put(obj.teacher_id+obj.parent_id+obj.created_date,parser1.getCurrentName());
+                    if(obj.salesforce_teacher_id ==teacherEmail || obj.teacher_id == teacherEmail)
+                    {
+                        parents.add(obj);    
+                    } 
+                }            
+            }            
+        }  
+        System.debug('@@'+parents);
+        /* code by Shyam Saini for creating map(messageid ,parentobj) for handling notification*/
+        System.debug('--map>>'+mapTeacherParent);
+        map<String, list<String>>notifyParent = new map<String,list<String>>();
+        list<edugo__ChatNotification__c>chtNotifyList = new list<edugo__ChatNotification__c>();
+        map<String, edugo__ChatNotification__c>oldNotifiedRecord = new map<String,edugo__ChatNotification__c>();
+        for(edugo__ChatNotification__c ch:[select id,edugo__isNotified__c,edugo__u_Msg_Id__c from edugo__ChatNotification__c]){
+            if(!oldNotifiedRecord.containsKey(ch.edugo__u_Msg_Id__c)){
+                oldNotifiedRecord.put(ch.edugo__u_Msg_Id__c,ch);
+            }
+        }
+        for(parents_teacher pt:parents){
+            if(mapTeacherParent.containsKey(pt.teacher_id+pt.parent_id+pt.created_date) && pt.u_msg_id ==null){
+                pt.u_msg_id =mapTeacherParent.get(pt.teacher_id+pt.parent_id+pt.created_date);
+                mapMessages.put(mapTeacherParent.get(pt.teacher_id+pt.parent_id+pt.created_date),pt);
+            }
+            if(pt.IsRead =='false'){
+                System.debug('==>'+pt.IsRead);
+                if(pt.parent_message !='' && pt.parent_message !=null && !oldNotifiedRecord.containsKey(pt.u_msg_id)){
+                    System.debug('==>inside if'+pt.IsRead);
+                    edugo__ChatNotification__c cht = new edugo__ChatNotification__c();
+                    cht.edugo__Sender_Email__c = pt.parent_id;
+                    cht.edugo__Message__c = pt.parent_message;
+                    cht.edugo__isNotified__c = true;
+                    cht.edugo__u_Msg_Id__c =pt.u_msg_id;
+                    chtNotifyList.add(cht);
+                    list<String>myList=new list<String>();
+                    myList.add(pt.parent_message);
+                    notifyParent.put(pt.u_msg_id,myList);
+                    Messaging.CustomNotification notification = new Messaging.CustomNotification();
+                    notification.setTitle('Chat Notification');
+                    notification.setBody('A new Message arrived from Parent');
+                    List<CustomNotificationType> ct = [SELECT id from CustomNotificationType];
+                    notification.setNotificationTypeId(ct[0].Id);
+                    notification.setTargetId('0051I000000SigqQAC');
+                    notification.send(new set<string>{userinfo.getUserId()});
+                    System.debug('===>'+pt.parent_message);
+                }
+                else{
+                    /* list<String> oldMessage=new list<String>(notifyParent.get(pt.parent_id));
+oldMessage.add(pt.parent_message);
+notifyParent.put(pt.parent_id,oldMessage); */
+                }
+            }
+        }
+        if(chtNotifyList.size()>0) insert chtNotifyList;
+        system.debug('mapMessages-->'+mapMessages);
+        system.debug('pt-->'+parents);
+        return parents;
+    }
+   // Created by Shyam Saini for reading messages
+  //  @future(callout = true)
+    public static void callFbaseRead(String msg_ids){
+           try{  
+             User usr = [select id,Name,SmallPhotoUrl,edugo__Default_Institution__c,FirstName,LastName,Email,contactId from User where id =: userInfo.getUserId()];
+            System.debug('--msg_ids>'+msg_ids);
+            Http h = new Http();
+            HttpRequest req = new HttpRequest();
+            string endPointValue='';
+               if(usr.edugo__Default_Institution__c == 'xS'){endPointValue = 'https://aaaa-cba19.firebaseio.com/chat/'+msg_ids+'/.json';}else if(usr.edugo__Default_Institution__c =='BSSP'){endPointValue = 'https://edugo-db7c7.firebaseio.com/chat/'+msg_ids+'/.json';}else if(usr.edugo__Default_Institution__c == 'BSL'){endPointValue = 'https://british-school-lisbon.firebaseio.com/chat/'+msg_ids+'/.json'; }else if(usr.edugo__Default_Institution__c == 'BSV'){endPointValue = 'https://british-school-vilnius.firebaseio.com/chat/'+msg_ids+'/.json';}
+            req.setEndpoint(endPointValue);
+            string body='{"IsRead":"true"}';
+            System.debug('--bdy>>>'+body);
+            req.setBody(body);
+            req.setHeader('Content-Type', 'application/json');
+            req.setMethod('PATCH');       
+            HttpResponse res; 
+            if(!test.isRunningTest())  {res = h.send(req); 
+                system.debug('--body->'+res.getBody());  
+            }
+            if(res.getStatusCode() == 200){
+                System.debug('--->stt>>'+res.getStatusCode());
+            }
+        }
+           catch(Exception e){
+            System.debug('-->excp>>'+e);
+        }
+    }
+    @auraEnabled
+    public static void updateReadMessage(list<String>msg_ids){
+        List<String>gruopOfMsgId = new List<String>();
+        for(String msgId:msg_ids){
+               if(gruopOfMsgId.size()<50)
+                   callFbaseRead(msgId);
+                else{
+                  // gruopOfMsgId.add(msgId);
+                   callFbaseRead(msgId);
+                 //  gruopOfMsgId.clear();
+                }
+        }
+    }
+    @AuraEnabled
+    public static String saveTheFiles(Id parentId, String fileName, String base64Data, String contentType) { 
+        try{
+            system.debug('Saving chatter files '+fileName + ' '+ contentType);
+            ContentVersion testContentInsert =new ContentVersion(); 
+            testContentInsert.Title =fileName; 
+            testContentInsert.VersionData=EncodingUtil.base64Decode(base64Data);
+            testContentInsert.PathOnClient='/' + fileName ;
+            insert testContentInsert; 
+            system.debug('testContentInsert.id '+ testContentInsert.id);
+            testContentInsert = [select id, ContentDocumentId from ContentVersion WHERE Id =: testContentInsert.Id];
+            ContentDistribution cdl = new ContentDistribution();
+            cdl.ContentVersionId = testContentInsert.Id;
+            cdl.Name = 'PublicShare';
+           // cdl.EmailPreferences = 'NoEmail';
+            cdl.PreferencesNotifyOnVisit = false;
+            Insert cdl;
+            ContentDistribution cd = [Select Id,DistributionPublicUrl,ContentDownloadUrl from ContentDistribution where Id = :cdl.Id];
+            system.debug('testContentInsert.id');
+            String prev_Url = cd.ContentDownloadUrl.replace('&' , '&amp;');
+            cd.PreferencesNotifyRndtnComplete = false;
+            system.debug('prev_Url-->'+prev_Url);
+            return cd.ContentDownloadUrl;   
+        } catch(Exception e){ 
+            system.debug('msge-->'+e.getMessage()+'Line-->'+e.getLineNumber());
+        }
+        return null;        
+    }  
+    @auraEnabled
+    public static parents_teacher sendfromteacher(string strd ,string emid, String p_DeviceId, String p_Name , String preview_url,String p_Image){
+        try{
+            p_DeviceId= [Select id,edugo__Email__c,edugo__Device_ID__c,edugo__Parent__c from edugo__Mobile_App_Credential__c where edugo__Email__c=:emid limit 1].edugo__Device_ID__c;
+            User usr = [select id,Name,SmallPhotoUrl,edugo__Default_Institution__c,FirstName,LastName,Email,contactId from User where id =: userInfo.getUserId()];
+            if(createMsgOnFbase(strd,emid,p_DeviceId,p_Name ,preview_url,p_Image,usr)){
+                 return sendNotify(p_DeviceId,usr,strd);
+            }
+            else{
+                System.debug('==>false');
+            }
+        } catch(Exception e){
+            system.debug('msge-->'+e.getMessage()+'Line-1->'+e.getLineNumber());
+        } 
+        return null;       
+    }  
+    // Created by shyam saini for creating message in firebase date-08-06-2023 
+    public static Boolean createMsgOnFbase(string strd ,string emid, String p_DeviceId, String p_Name , String preview_url,String p_Image,User usr){
+         system.debug('==p_Name====>'+p_Name);
+        String str = p_Name;
+         string pfname,psname;
+        pfname = p_Name.substringBefore(' ');
+        psname = p_Name.substringAfter(' ');
+         System.debug(pfname);
+        string endpoint= '';
+             //  List<Contact> teacherConts = [Select id,Email from Contact where Email = :userinfo.getUserEmail() and Email != null];
+            String teacher_Id = usr.Email;
+            Map<String,Object>requestBody = new Map<String,Object>{'chat_id'=>1,'IsRead' => 'false','reply'=>'reply','screen'=>'admin','status'=>'true','LastChatTime'=>System.now().format('EEEE, MMMM d yyyy hh:mm:ss a','IST'),'created_date'=>DateTime.now().format('EEEE, MMMM d yyyy hh:mm:ss a','IST')};
+            if(String.isNotBlank(emid)) requestBody.put('email',emid);
+            if(String.isNotBlank(emid)) requestBody.put('salesforce_parent_id',emid);
+            if(String.isNotBlank(teacher_Id)) requestBody.put('salesforce_teacher_id',teacher_Id);
+            if(String.isNotBlank(usr.SmallPhotoUrl)) requestBody.put('image',usr.SmallPhotoUrl);
+            if(String.isNotBlank(p_Image)) requestBody.put('p_image',p_Image);
+            if(String.isNotBlank(teacher_Id)) requestBody.put('email1',teacher_Id);
+            if(String.isNotBlank(usr.FirstName)) requestBody.put('firstname',pfname);
+            if(String.isNotBlank(usr.LastName)) requestBody.put('lastname',psname);
+            if(String.isNotBlank(usr.FirstName)) requestBody.put('tFirstName',usr.FirstName);
+            if(String.isNotBlank(usr.LastName)) requestBody.put('tLastName',usr.LastName);
+            if(String.isNotBlank(strd)) requestBody.put('message1',strd);
+            if(String.isNotBlank(emid)) requestBody.put('parent_id',emid);
+            if(String.isNotBlank(teacher_Id)) requestBody.put('teacher_id',emid);
+            requestBody.put('teacher_message',strd);  
+            if(String.isNotBlank(emid)) requestBody.put('login_email',emid);
+            if(String.isNotBlank(p_DeviceId)) requestBody.put('iosdevicetoken',p_DeviceId);
+            if(String.isNotBlank(preview_url)) requestBody.put('download_url',preview_url);
+        if(usr.edugo__Default_Institution__c == 'xS'){
+            endpoint ='https://aaaa-cba19.firebaseio.com/chat.json';
+        }
+        else if(usr.edugo__Default_Institution__c =='BSSP'){
+            endpoint = 'https://edugo-db7c7.firebaseio.com/chat.json';
+        }
+        else if(usr.edugo__Default_Institution__c == 'BSL'){
+             endpoint = 'https://british-school-lisbon.firebaseio.com/chat.json'; 
+        }
+        else if(usr.edugo__Default_Institution__c == 'BSV'){
+             endpoint = 'https://british-school-vilnius.firebaseio.com/chat.json'; 
+        }
+            Http htr = new Http();
+            Httprequest request=New Httprequest(); 
+            request.setEndpoint(endpoint);
+            request.setMethod('POST');
+            System.debug('=requestBody=>'+JSON.serialize(requestBody));
+            request.setBody(JSON.serialize(requestBody));
+            Httpresponse hp =new Httpresponse();
+            String resBody='';
+            Integer stsCode =0;
+            if(!test.isRunningTest()){hp=htr.send(request);  resBody =  hp.getBody();
+            } else {
+                hp.setBody('"{\"name\":\"-N7F0QAh2Tg4UAvmVfPF\"}"');
+                resBody=hp.getBody();
+            }
+   if(!test.isRunningTest()){
+       stsCode =  hp.getStatusCode();
+        Map<String,Object> respData = (Map<String,Object>) JSON.deserializeUntyped(resBody);
+            system.debug('resBodysend-->'+respData);
+            newMsgid =(String)respData.get('name');
+        System.debug('=stsCode=>'+stsCode);
+   }else {
+       stsCode=200;
+   }
+           return stsCode ==200 ? true :false;
+    }
+    // Created by shyam saini for sending notification on mobile to the parent date-08-06-2023 
+    public static parents_teacher sendNotify(String p_DeviceId,User usr,String strd){
+            parents_teacher parent_teac =  getCurrentMessage();
+            system.debug('p_DeviceId-->'+p_DeviceId); 
+            system.debug('parent_teac-->'+parent_teac); 
+            string deviceToken = p_DeviceId; 
+            string title =usr.FirstName;
+            system.debug('title'+title);
+            Http http = new Http(); 
+            HttpRequest request1 = new HttpRequest();
+            request1.setEndpoint('https://fcm.googleapis.com/fcm/send');
+            request1.setMethod('POST');
+            request1.setHeader('Content-Type', 'application/json;charset=UTF-8');
+        String key='';
+        if(usr.edugo__Default_Institution__c == 'xS'){
+            key ='Key=AAAADylggnQ:APA91bGrD_94_vcDiTpitbF43wAcjK5-EY4El_DLvL21BzzvYFYK75qNxRslTJdxgbaqCdZC0MN8EE_CpxVdohD-J4CrI8nB5un6ueJhIR-jT11hO22hs8PWYwSKgKpi1B727FMWdMjB';
+        }
+        else if(usr.edugo__Default_Institution__c =='BSSP'){
+            key ='Key=AAAAMIWNW_Q:APA91bHBzfvBLSAnBlCBiM38OpO_5AAxgkt9y5s2ClvODJhZ5cXnxGnIOIA3pwF34EoL8CiAZDZ_H4-D0QJVVIOLyDd5zHEsCwclKBT2l1dgDIuab3E-lo8vQ7b316_Dg6GLtpDjmSzw';
+        }
+        else if(usr.edugo__Default_Institution__c == 'BSL'){
+            key ='Key=AAAA4CoPTCg:APA91bEMoDesNdHwHEfq0WxYI-Fme9QR7lExDSJ21gfZ3QGX4O61MIJZOayoO89x_T0TXzqWWMm5DW7DT527NKV_lox53FzEUvUm3UBc-Nvu4bfGaOReE7jsCj8aXkYmxNmm8ypWG1sf';
+        }
+        else if(usr.edugo__Default_Institution__c == 'BSV'){
+            key ='Key=AAAA-i-k84c:APA91bHKpDQuJ1ocfHy4yBoDDrLY8CZIiPYTfBIpYw3-P6MY_vquat2CVGJRTceHWjxbp3Qd4G8Prd9VfoV_VxrP3_Ghetdpsj07XGl2zBIz2lmXD42vmY64flP4hY9kzPnYbcIORy5s';
+        }
+          //  String req ='{"to":"'+deviceToken+'", "notification":{"body":"'+strd+'", "title":"'+title+'", "subtitle": "message"}, "data": { "module": "ProblemTracking", "target": "Chat", "_subtitle": "message", "data": { "created_date": "'+parent_teac.created_date+'", "salesforce_parent_id": "'+parent_teac.salesforce_parent_id+'", "salesforce_teacher_id": "'+parent_teac.salesforce_teacher_id+'", "image": "'+parent_teac.download_url+'", "email": "'+parent_teac.email+'", "email1": "'+parent_teac.email1+'", "firstname":"'+parent_teac.firstname+'", "lastname":"'+parent_teac.lastname+'", "parent_id":"'+parent_teac.parent_id+'", "parent_message":"'+parent_teac.message1+'", "screen":"'+parent_teac.screen+'", "tFirstName":"'+usr.FirstName+'", "tLastName": "'+usr.LastName+'", "tLastName": "'+usr.LastName+'", "teacher_id":"'+parent_teac.teacher_id+'" } } }';
+            request1.setHeader('Authorization',key); //legacy server key
+            request1.setBody('{"to":"'+deviceToken+'", "notification":{"body":"'+strd+'", "title":"'+title+'", "subtitle": "message"}, "data": { "module": "ProblemTracking", "target": "Chat", "_subtitle": "message", "data": { "created_date": "'+parent_teac.created_date+'", "salesforce_parent_id": "'+parent_teac.salesforce_parent_id+'", "salesforce_teacher_id": "'+parent_teac.salesforce_teacher_id+'", "image": "'+parent_teac.download_url+'", "email": "'+parent_teac.email+'", "email1": "'+parent_teac.email1+'", "firstname":"'+parent_teac.firstname+'", "lastname":"'+parent_teac.lastname+'", "parent_id":"'+parent_teac.parent_id+'", "parent_message":"'+parent_teac.message1+'", "screen":"'+parent_teac.screen+'", "tFirstName":"'+usr.FirstName+'", "tLastName": "'+usr.LastName+'", "tLastName": "'+usr.LastName+'", "teacher_id":"'+parent_teac.teacher_id+'" } } }');
+           // request1.setBody(' { "to":"'+deviceToken+'", "notification":{"body":"'+msg+'", "title":"'+title+'", "subtitle": "message"}');
+         //  system.debug('===visva==='+req);
+            HttpResponse response = new HttpResponse();
+            if(!Test.isRunningTest()) {  response= http.send(request1);
+                System.debug('1123--status->'+response);
+            }else{
+                response=null;
+            }
+            return parent_teac;  
+    }
+    // Created by Shyam Saini for getting current message
+    public static parents_teacher getCurrentMessage(){
+        string endpoint='';
+         user usr = [select id,edugo__Default_Institution__c,Email from user  where id=:userinfo.getuserid() Limit 1];
+        if(usr.edugo__Default_Institution__c == 'xS'){ endpoint ='https://aaaa-cba19.firebaseio.com/chat/'+newMsgid+'/.json';
+        }
+        else if(usr.edugo__Default_Institution__c == 'BSSP'){
+            endpoint = 'https://edugo-db7c7.firebaseio.com/chat/'+newMsgid+'/.json';
+        }
+        else if(usr.edugo__Default_Institution__c == 'BSL'){
+             endpoint = 'https://british-school-lisbon.firebaseio.com/chat/'+newMsgid+'/.json';
+        }
+        else if(usr.edugo__Default_Institution__c == 'BSV'){
+             endpoint = 'https://british-school-vilnius.firebaseio.com/chat/'+newMsgid+'/.json';
+        }
+        map<String,String>mapTeacherParent = new map<String,String>();
+        String teacherEmail= UserInfo.getUserEmail();
+        set<string> setMessageId=new set<string>();      
+        list<parents_teacher> parents=new list<parents_teacher>();
+        Http h = new Http();
+        HttpRequest req = new HttpRequest();      
+        req.setEndpoint(endpoint); 
+        req.setMethod('GET');       
+        HttpResponse res =new HttpResponse(); 
+        String resBody = '';
+        if(!test.isRunningTest()){ res = h.send(req);    resBody = res.getBody();
+        } else {
+            System.debug('---resBody null');
+            res.setBody('{"-N6lDR51Kw4Nn7dFCGuU":{"chat_id":"1","created_date":"Tuesday, July 12, 2022 12:35:02 PM","email":"john@schoolstrust.co.uk","email1":"manisha.kapoor2995@gmail.com","firstname":"Technology","lastname":"logy","message1":"bhxgfdbgxnfhcgvn m","parent_id":"manisha.kapoor2995@gmail.com","reply":"reply","screen":"admin","teacher_id":"john@schoolstrust.co.uk","teacher_message":"bhxgfdbgxnfhcgvn m","teacher_token":"ADMIN123124"}}');
+            resBody=res.getBody();
+        }
+        System.debug('==bdy>>'+resBody);
+        try{
+        return (parents_teacher) System.JSON.deserialize(resBody, parents_teacher.class);
+        }
+        catch(Exception e){
+            return new parents_teacher();
+        }
+    }
+    @auraEnabled
+    public static void updateAccessToken(){
+        try{
+            edugo__FireBase_Credential__c fiteBase_obj = new edugo__FireBase_Credential__c();
+            fiteBase_obj = [Select id,edugo__UserName__c,edugo__School_Code__c,edugo__Password__c,
+                            edugo__Client_Secrete__c,edugo__ClientId__c,edugo__AccessToken__c
+                            from edugo__FireBase_Credential__c Where edugo__School_Code__c = 'xS' limit 1];
+            System.debug('--->'+fiteBase_obj);
+            if(fiteBase_obj != null){
+                System.debug('---->if');
+                String ENP_POINT_URL = 'https://login.salesforce.com/services/oauth2/token';
+                String REQUEST_BODY = 'grant_type=password&client_id='+fiteBase_obj.edugo__ClientId__c+'&client_secret='+fiteBase_obj.edugo__Client_Secrete__c+'&username='+fiteBase_obj.edugo__UserName__c+'&password='+fiteBase_obj.edugo__Password__c;
+                // String REQUEST_BODY = 'grant_type=password&client_id=3MVG9g9rbsTkKnAXmYQWO6OU2w9nnwS4jkm_1zgG18EZac9cGzM6qO4sfGQETYnXxwBDrGBu4PriEwmlhexgH&client_secret=F642E5A8CDEBE185628DC1AC4ACBA991567194EA2CE227A6D61A9AF138AA8F21&username=developer@schoolstrust.co.uk&password=JJEdugo99sdl!st202021';
+                HttpRequest req = new HttpRequest();
+                req.setEndpoint(ENP_POINT_URL);
+                req.setMethod('POST');     
+                req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+                req.setBody(REQUEST_BODY);
+                req.setTimeout(60000);
+                Http http = new Http();
+                HttpResponse res;
+                String resBody;
+                Integer code = 0;
+                if(!test.isRunningTest()){res = http.send(req);  resBody =  res.getBody(); code = res.getStatusCode(); 
+                } else {
+                    resBody = '';  
+                } 
+                system.debug('resBody-->'+resBody);
+                wr_AuthAccToken wr = new wr_AuthAccToken();
+                wr = (wr_AuthAccToken )JSON.deserialize(resBody, wr_AuthAccToken.class); 
+                system.debug('wr-->'+wr.access_token); 
+                fiteBase_obj.edugo__AccessToken__c = wr.access_token;
+            }
+            if(fiteBase_obj != null){
+                update fiteBase_obj;
+            }
+        }catch(Exception e){
+            system.debug('msg-->'+e.getMessage()+'Line-12->'+e.getLineNumber());
+        }
+    } 
+    public class wr_AuthAccToken{ 
+        @auraEnabled 
+        public String token_type{get;set;}
+        @auraEnabled 
+        public String id{get;set;}
+        @auraEnabled 
+        public String issued_at{get;set;}
+        @auraEnabled 
+        public String instance_url{get;set;}
+        @auraEnabled 
+        public String signature{get;set;}
+        @auraEnabled 
+        public String access_token{get;set;}
+    }
+    public class JsonParser1 {      
+        @auraEnabled       
+        public String name{get;set;}        
+    }
+    /* public class JsonParser {  
+@auraEnabled public list<staffInfo> staffInfo{get;set;}
+@auraEnabled public list<String> teachers{get;set;}
+@auraEnabled public String UserType{get;set;}
+@auraEnabled public list<parents> parents{get;set;}
+@auraEnabled public String DeviceId{get;set;}        
+}     
+public class staffInfo{
+@auraEnabled public String Name{get;set;}
+@auraEnabled public String Image{get;set;}
+@auraEnabled public String Email{get;set;}
+@auraEnabled public String Type{get;set;}
+@auraEnabled public String UserId{get;set;}
+@auraEnabled public String DeviceId{get;set;}
+}      
+public class parents{
+@auraEnabled
+public String DeviceId{get;set;}
+@auraEnabled
+public String Image{get;set;}  
+@auraEnabled
+public String Name{get;set;}    
+@auraEnabled
+public String Email{get;set;}
+@auraEnabled
+public String UserId{get;set;}
+@auraEnabled
+public String Type{get;set;}
+} */
+    public class parents_teacher{
+        @auraEnabled
+        public String u_msg_id{get;set;}
+        @auraEnabled
+        public String IsRead{get;set;}
+        @auraEnabled
+        public String created_date{get;set;}
+        @auraEnabled
+        public String firstname{get;set;}  
+        @auraEnabled
+        public String lastname{get;set;}    
+        @auraEnabled
+        public String parent_id{get;set;}
+        @auraEnabled
+        public String parent_message{get;set;}
+        @auraEnabled
+        public String reply{get;set;}
+        @auraEnabled
+        public String screen{get;set;}
+        @auraEnabled
+        public String teacher_id{get;set;}  
+        @auraEnabled
+        public String teacher_token{get;set;}    
+        @auraEnabled
+        public String Email{get;set;}
+        @auraEnabled
+        public String teacher_message{get;set;}
+        @auraEnabled
+        public String chat_id{get;set;}
+        @auraEnabled
+        public String parent_token{get;set;}
+        @auraEnabled
+        public String salesforce_parent_id{get;set;}
+        @auraEnabled
+        public String salesforce_teacher_id{get;set;}
+        @auraEnabled
+        public String message1{get;set;}  
+        @auraEnabled
+        public String status{get;set;}    
+        @auraEnabled
+        public String email1{get;set;}
+        @auraEnabled
+        public String download_url{get;set;}  
+        @auraEnabled
+        public String image{get;set;} 
+         @auraEnabled
+        public String login_email{get;set;} 
+        @auraEnabled
+        public String tFirstName{get;set;} 
+        @auraEnabled
+        public String tLastName{get;set;}
+        @auraEnabled
+        public String LastChatTime{get;set;}
+        @auraEnabled
+        public String iosdevicetoken{get;set;} 
+    }    
+    public class wr_AllParents{
+        @auraEnabled public list<staffInfo> staffInfo{get;set;}
+        @auraEnabled public list<teachers> teachers{get;set;}
+        @auraEnabled public String UserType{get;set;}
+        @auraEnabled public list<parents> parents{get;set;}
+        @auraEnabled public String DeviceId{get;set;}
+    }
+    public class teachers{
+        @auraEnabled public String Email{get;set;}
+        @auraEnabled public String Image{get;set;}
+        @auraEnabled public String Type{get;set;}
+        @auraEnabled public String Name{get;set;}
+        @auraEnabled public String DeviceId{get;set;}
+        @auraEnabled public String UserId{get;set;}
+    }
+    public class staffInfo{
+        @auraEnabled public String Name{get;set;}
+        @auraEnabled public String Image{get;set;}
+        @auraEnabled public String Email{get;set;}
+        @auraEnabled public String Type{get;set;}
+        @auraEnabled public String UserId{get;set;}
+        @auraEnabled public String DeviceId{get;set;}
+    }
+    public class parents{
+        @auraEnabled public String DeviceId{get;set;}
+        @auraEnabled public String Image{get;set;}
+        @auraEnabled public String Name{get;set;}
+        @auraEnabled public String Email{get;set;}
+        @auraEnabled public String UserId{get;set;}
+        @auraEnabled public String Type{get;set;}
+        @auraEnabled public Integer count{get;set;}
+        @auraEnabled public String LastChatTime{get;set;}
+    }
+}
+=============================================CHAT NOTIFICATION CONTROLLER============================================================================
+public class ChatNotificationSchedule {
+     @future(callout=true)
+    public static void reqTorespone() {    
+        map<String,String>mapTeacherParent = new map<String,String>();
+        set<string> setMessageId=new set<string>();      
+        list<parents_teacher> parents=new list<parents_teacher>();
+        map<String,parents_teacher>mapMessages = new map<String,parents_teacher>();
+        String teacher_Id = UserInfo.getUserEmail();
+        String emid ='';
+        String email ='"email"';
+        String email1 ='"email1"';
+        string endpoint='https://aaaa-cba19.firebaseio.com/chat.json?orderBy='+email+'&equalto='+teacher_Id+'&orderby='+email1+'&equalto='+emid;
+        Http h = new Http();
+        HttpRequest req = new HttpRequest();      
+        req.setEndpoint(endpoint); 
+        req.setMethod('GET');       
+        HttpResponse res =new HttpResponse(); 
+        String resBody = '';
+        if(!test.isRunningTest()){
+            res = h.send(req);   
+            resBody = res.getBody();
+        } else {
+            System.debug('---resBody null');
+            res.setBody('{"-N6lDR51Kw4Nn7dFCGuU":{"chat_id":"1","created_date":"Tuesday, July 12, 2022 12:35:02 PM","email":"john@schoolstrust.co.uk","email1":"manisha.kapoor2995@gmail.com","firstname":"Technology","lastname":"logy","message1":"bhxgfdbgxnfhcgvn m","parent_id":"manisha.kapoor2995@gmail.com","reply":"reply","screen":"admin","teacher_id":"john@schoolstrust.co.uk","teacher_message":"bhxgfdbgxnfhcgvn m","teacher_token":"ADMIN123124"}}');
+            resBody=res.getBody();
+        }
+        system.debug('body-->'+res.getBody());
+        System.JSONParser parser = JSON.createParser(resBody);   
+        while(parser.nextToken()!= null) {
+            if(parser.getCurrentToken() == JSONToken.FIELD_NAME) {                
+                setMessageId.add(parser.getCurrentName());   
+                // System.debug('--->st'+parser.getCurrentName());
+            }
+        } 
+        System.debug('--->setMessageId'+setMessageId);
+        set<string> str=new set<string>{'u_msg_id','IsRead','created_date','email','email1','firstname','lastname','parent_id','parent_message','reply,screen','teacher_id','teacher_token','teacher_message',
+            'chat_id','parent_token','message1','status','download_url','reply','screen'};
+                setMessageId.removeAll(str);
+        System.JSONParser parser1 = JSON.createParser(resBody);                
+        while(parser1.nextToken()!= null) {
+            if(parser1.getCurrentToken() == JSONToken.FIELD_NAME) {                
+                if(setMessageId.contains(parser1.getText())) {                  
+                    parser1.nextToken();
+                    parents_teacher obj = (parents_teacher)parser1.readValueAs(parents_teacher.class);
+                    mapTeacherParent.put(obj.teacher_id+obj.parent_id+obj.created_date,parser1.getCurrentName());
+                    parents.add(obj);    
+                    //  System.debug('--n'+obj);
+                }            
+            }            
+        }  
+        /* code by Shyam Saini for creating map(messageid ,parentobj) for handling notification*/
+        System.debug('--map>>'+mapTeacherParent);
+        map<String, list<String>>notifyParent = new map<String,list<String>>();
+        list<edugo__ChatNotification__c>chtNotifyList = new list<edugo__ChatNotification__c>();
+        map<String, edugo__ChatNotification__c>oldNotifiedRecord = new map<String,edugo__ChatNotification__c>();
+        for(edugo__ChatNotification__c ch:[select id,edugo__isNotified__c,edugo__u_Msg_Id__c from edugo__ChatNotification__c]){
+            if(!oldNotifiedRecord.containsKey(ch.edugo__u_Msg_Id__c)){
+                oldNotifiedRecord.put(ch.edugo__u_Msg_Id__c,ch);
+            }
+        }
+        system.debug('==oldNotifiedRecord=>'+oldNotifiedRecord);
+        for(parents_teacher pt:parents){
+            if(mapTeacherParent.containsKey(pt.teacher_id+pt.parent_id+pt.created_date) && pt.u_msg_id ==null){
+                pt.u_msg_id =mapTeacherParent.get(pt.teacher_id+pt.parent_id+pt.created_date);
+                mapMessages.put(mapTeacherParent.get(pt.teacher_id+pt.parent_id+pt.created_date),pt);
+            }
+            if(pt.IsRead =='false'){
+                System.debug('==>'+pt.IsRead);
+                if(pt.parent_message !='' && pt.parent_message !=null && !oldNotifiedRecord.containsKey(pt.u_msg_id)){
+                    System.debug('==>inside if'+pt.IsRead);
+                    edugo__ChatNotification__c cht = new edugo__ChatNotification__c();
+                    cht.edugo__Sender_Email__c = pt.parent_id;
+                    cht.edugo__Message__c = pt.parent_message;
+                    cht.edugo__isNotified__c = true;
+                    cht.edugo__u_Msg_Id__c =pt.u_msg_id;
+                    chtNotifyList.add(cht);
+                    list<String>myList=new list<String>();
+                    myList.add(pt.parent_message);
+                    notifyParent.put(pt.u_msg_id,myList);
+                    Messaging.CustomNotification notification = new Messaging.CustomNotification();
+                    notification.setTitle('Chat Notification');
+                    notification.setBody('A new Message arrived from Parent');
+                    CustomNotificationType ct = [SELECT id from CustomNotificationType WHERE developername='CustomNotificationType'];
+                    notification.setNotificationTypeId(ct.Id);
+                    notification.setTargetId('0051I000000SigqQAC');
+                    notification.send(new set<string>{userinfo.getUserId()});
+                    System.debug('===>'+pt.parent_message);
+                }
+            }
+        }
+        if(chtNotifyList.size()>0) insert chtNotifyList;
+        system.debug('mapMessages-->'+mapMessages);
+        system.debug('pt-->'+parents);
+        
+    }
+    public class parents_teacher{
+        @auraEnabled
+        public String u_msg_id{get;set;}
+        @auraEnabled
+        public String IsRead{get;set;}
+        @auraEnabled
+        public String created_date{get;set;}
+        @auraEnabled
+        public String firstname{get;set;}  
+        @auraEnabled
+        public String lastname{get;set;}    
+        @auraEnabled
+        public String parent_id{get;set;}
+        @auraEnabled
+        public String parent_message{get;set;}
+        @auraEnabled
+        public String reply{get;set;}
+        @auraEnabled
+        public String screen{get;set;}
+        @auraEnabled
+        public String teacher_id{get;set;}  
+        @auraEnabled
+        public String teacher_token{get;set;}    
+        @auraEnabled
+        public String Email{get;set;}
+        @auraEnabled
+        public String teacher_message{get;set;}
+        @auraEnabled
+        public String chat_id{get;set;}
+        @auraEnabled
+        public String parent_token{get;set;}
+        @auraEnabled
+        public String salesforce_parent_id{get;set;}
+        @auraEnabled
+        public String salesforce_teacher_id{get;set;}
+        @auraEnabled
+        public String message1{get;set;}  
+        @auraEnabled
+        public String status{get;set;}    
+        @auraEnabled
+        public String email1{get;set;}
+        @auraEnabled
+        public String download_url{get;set;}   
+    } 
+}
